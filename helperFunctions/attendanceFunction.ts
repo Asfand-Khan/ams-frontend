@@ -1,0 +1,34 @@
+import { AttendanceResponse, SingleAttendanceResponse } from "@/types/attendanceTypes";
+import { axiosFunction } from "@/utils/axiosFunction";
+
+export const fetchAttendanceListByDate = async (data: {
+  attendance_date: string;
+}): Promise<AttendanceResponse | null> => {
+  try {
+    const response = await axiosFunction({
+      method: "POST",
+      urlPath: "/attendances/by-date",
+      data,
+    });
+    return response;
+  } catch (err) {
+    console.error("Error fetching attendance list:", err);
+    return null;
+  }
+};
+
+export const fetchAttendanceById = async (data: {
+  attendance_id: number;
+}): Promise<SingleAttendanceResponse | null> => {
+  try {
+    const response = await axiosFunction({
+      method: "POST",
+      urlPath: "/attendances/by-id",
+      data,
+    });
+    return response;
+  } catch (err) {
+    console.error("Error fetching single attendance:", err);
+    return null;
+  }
+};
