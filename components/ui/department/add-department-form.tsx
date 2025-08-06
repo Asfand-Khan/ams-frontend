@@ -11,7 +11,6 @@ import { useForm } from "react-hook-form";
 import { axiosFunction, axiosReturnType } from "@/utils/axiosFunction";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
-import { LeaveTypeSchema, LeaveTypeType } from "@/schemas/addLeaveTypeSchema";
 import { Input } from "../shadcn/input";
 import {
   DepartmentSchema,
