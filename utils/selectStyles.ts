@@ -8,12 +8,12 @@ interface SelectOption {
 export const selectStyles: StylesConfig<SelectOption, false> = {
   control: (provided, state) => ({
     ...provided,
-    border: state.isFocused ? "1px solid #c93f52" : "1px solid #e5e5e5",
+    border: state.isFocused ? "1px solid #0074FC" : "1px solid #e5e5e5",
     borderRadius: "8px",
     padding: "2px",
     boxShadow: state.isFocused ? "0 0 0 3px rgba(201, 63, 82, 0.5)" : "none",
     "&:hover": {
-      border: state.isFocused ? "1px solid #c93f52" : "1px solid #e5e5e5",
+      border: state.isFocused ? "1px solid #0074FC" : "1px solid #e5e5e5",
     },
     fontSize: "14px",
     color: "#0a0a0a",
