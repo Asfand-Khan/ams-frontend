@@ -1,7 +1,5 @@
 import z from "zod";
 
-const timeStringRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
-
 export const shiftSchema = z.object({
   name: z
     .string({
@@ -13,18 +11,16 @@ export const shiftSchema = z.object({
     .toLowerCase(),
 
   start_time: z
-    .string({
+    .date({
       required_error: "Start time is required.",
-      invalid_type_error: "Start time must be a string in HH:mm:ss format.",
-    })
-    .regex(timeStringRegex, "Start time must be in HH:mm:ss format."),
+      invalid_type_error: "Start time must be a date string.",
+    }),
 
   end_time: z
-    .string({
+    .date({
       required_error: "End time is required.",
-      invalid_type_error: "End time must be a string in HH:mm:ss format.",
-    })
-    .regex(timeStringRegex, "End time must be in HH:mm:ss format."),
+      invalid_type_error: "End time must be a date string.",
+    }),
 
   grace_minutes: z
     .number({
@@ -38,13 +34,7 @@ export const shiftSchema = z.object({
     .string({
       required_error: "Half day hours is required.",
       invalid_type_error: "Half day hours must be a string.",
-    })
-    .refine(
-      (val) => !isNaN(parseFloat(val)),
-      "Half day hours must be a valid number string."
-    )
-    .transform((val) => parseFloat(val))
-    .refine((val) => val > 0, "Half day hours must be greater than 0."),
+    }),
 
   early_leave_threshold_minutes: z
     .number({
