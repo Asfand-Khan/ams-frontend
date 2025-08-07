@@ -47,3 +47,24 @@ export interface SingleAttendanceRecord {
   created_at: string;
   updated_at: string;
 }
+
+export type DailyAttendanceSummaryPayload = {
+  total_employees: number;
+  present: string;
+  on_leave: string;
+  weekend: string;
+  work_from_home: string;
+  absent: string;
+  late_arrivals: string;
+  manual_check_in: string;
+  early_leaves: string;
+  half_days: string;
+  overtimes: string;
+  manual_check_out: string;
+};
+
+export type DailyAttendanceSummaryResponse = {
+  status: number;
+  message: string;
+  payload: DailyAttendanceSummaryPayload[];
+};

@@ -5,7 +5,7 @@ export const fetchUserList = async () => {
   try {
     const response = await axiosFunction({
       method: "GET",
-      urlPath: "/users",
+      urlPath: "/employees/users",
     });
 
     return response;

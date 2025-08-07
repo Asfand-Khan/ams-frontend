@@ -1,4 +1,4 @@
-import { AttendanceResponse, SingleAttendanceResponse } from "@/types/attendanceTypes";
+import { AttendanceResponse, DailyAttendanceSummaryResponse, SingleAttendanceResponse } from "@/types/attendanceTypes";
 import { axiosFunction } from "@/utils/axiosFunction";
 
 export const fetchAttendanceListByDate = async (data: {
@@ -29,6 +29,19 @@ export const fetchAttendanceById = async (data: {
     return response;
   } catch (err) {
     console.error("Error fetching single attendance:", err);
+    return null;
+  }
+};
+
+export const fetchDailyAttendanceSummary = async (): Promise<DailyAttendanceSummaryResponse | null> => {
+  try {
+    const response = await axiosFunction({
+      method: "GET",
+      urlPath: "/attendances/daily-attendance-summary",
+    });
+    return response;
+  } catch (err) {
+    console.error("Error fetching daily attendance summary:", err);
     return null;
   }
 };

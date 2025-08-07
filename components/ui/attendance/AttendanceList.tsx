@@ -1,7 +1,11 @@
 "use client";
 
 import useAttendanceIdStore from "@/hooks/useAttendanceIdStore";
-import { AttendanceRecord, AttendanceResponse } from "@/types/attendanceTypes";
+import {
+  AttendanceRecord,
+  AttendanceResponse,
+  DailyAttendanceSummaryResponse,
+} from "@/types/attendanceTypes";
 import { getRights } from "@/utils/getRights";
 import { useQuery } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
@@ -25,7 +29,10 @@ import LoadingState from "../foundations/loading-state";
 import Error from "../foundations/error";
 import SubNav from "../foundations/sub-nav";
 import AttendancesDatatable from "./attendance-datatable";
-import { fetchAttendanceListByDate } from "@/helperFunctions/attendanceFunction";
+import {
+  fetchAttendanceListByDate,
+  fetchDailyAttendanceSummary,
+} from "@/helperFunctions/attendanceFunction";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -47,6 +54,16 @@ const AttendanceList = () => {
   }, [pathname]);
 
   // Fetch attendance list data using react-query
+  const {
+    data: dailyAttendanceSummaryResponse,
+    isLoading: dailyAttendanceSummaryLoading,
+    isError: dailyAttendanceSummaryIsError,
+    error: dailyAttendanceSummaryError,
+  } = useQuery<DailyAttendanceSummaryResponse | null>({
+    queryKey: ["daily-attendance-summary"],
+    queryFn: fetchDailyAttendanceSummary,
+  });
+
   const {
     data: attendanceListResponse,
     isLoading: attendanceListLoading,
@@ -164,7 +181,13 @@ const AttendanceList = () => {
                   }}
                   asChild
                 >
-                  <Link href={ record.id == null || record.id === undefined ? "#" : EDIT_URL}>
+                  <Link
+                    href={
+                      record.id == null || record.id === undefined
+                        ? "#"
+                        : EDIT_URL
+                    }
+                  >
                     <Edit className="mr-2 h-4 w-4" />
                     Edit
                   </Link>
@@ -221,6 +244,59 @@ const AttendanceList = () => {
         urlPath={ADD_URL}
         addBtnTitle="Add Attendance"
       />
+      {dailyAttendanceSummaryResponse?.payload && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+          {/* Total Employees */}
+          <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
+            <p className="text-sm text-muted-foreground mb-1">
+              Total Employees
+            </p>
+            <p className="text-xl font-semibold">
+              {dailyAttendanceSummaryResponse.payload[0].total_employees}
+            </p>
+          </div>
+
+          {/* Present */}
+          <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
+            <p className="text-sm text-muted-foreground mb-1">Present</p>
+            <p className="text-xl font-semibold">
+              {dailyAttendanceSummaryResponse.payload[0].present}
+            </p>
+          </div>
+
+          {/* Absent */}
+          <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
+            <p className="text-sm text-muted-foreground mb-1">Absent</p>
+            <p className="text-xl font-semibold">
+              {dailyAttendanceSummaryResponse.payload[0].absent}
+            </p>
+          </div>
+
+          {/* Work From Home */}
+          <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
+            <p className="text-sm text-muted-foreground mb-1">Work From Home</p>
+            <p className="text-xl font-semibold">
+              {dailyAttendanceSummaryResponse.payload[0].work_from_home}
+            </p>
+          </div>
+
+          {/* Late Arrivals */}
+          <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
+            <p className="text-sm text-muted-foreground mb-1">Late Arrivals</p>
+            <p className="text-xl font-semibold">
+              {dailyAttendanceSummaryResponse.payload[0].late_arrivals}
+            </p>
+          </div>
+
+          {/* On Leave */}
+          <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
+            <p className="text-sm text-muted-foreground mb-1">On Leave</p>
+            <p className="text-xl font-semibold">
+              {dailyAttendanceSummaryResponse.payload[0].on_leave}
+            </p>
+          </div>
+        </div>
+      )}
       <AttendancesDatatable
         columns={columns}
         payload={attendanceListResponse.payload}
