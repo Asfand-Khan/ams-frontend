@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Button } from "../shadcn/button";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Label } from "../shadcn/label";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,21 +11,10 @@ import { Controller, useForm } from "react-hook-form";
 import { axiosFunction, axiosReturnType } from "@/utils/axiosFunction";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
-import {
-  AttendanceSchema,
-  AttendanceSchemaType,
-} from "@/schemas/attendanceSchema";
-import Select from "react-select";
-import { EmployeePayloadType } from "@/types/employeeTypes";
-import { selectStyles } from "@/utils/selectStyles";
-import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "../shadcn/popover";
-import { Calendar } from "../shadcn/calendar";
 import { format } from "date-fns";
 import { TimePicker12Demo } from "../foundations/time-picker";
 import { shiftSchema, ShiftType } from "@/schemas/shiftSchema";
 import { Input } from "../shadcn/input";
-import { start } from "repl";
 
 const AddShiftForm = () => {
   // Constants
@@ -41,7 +30,6 @@ const AddShiftForm = () => {
     reset,
     control,
     register,
-    watch,
   } = useForm({
     resolver: zodResolver(shiftSchema),
   });
