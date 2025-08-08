@@ -9,6 +9,7 @@ type axiosParams = {
   data?: any;
   token?: string;
   isServer?: boolean;
+  apiVersion?: boolean;
 };
 
 export type axiosReturnType = {
@@ -23,8 +24,9 @@ export const axiosFunction = async ({
   data = {},
   token = undefined,
   isServer = false,
+  apiVersion = false,
 }: axiosParams) => {
-  const url = process.env.NEXT_PUBLIC_API_BASE_URL + urlPath;
+  const url = apiVersion ? process.env.NEXT_PUBLIC_API_V2_BASE_URL + urlPath : process.env.NEXT_PUBLIC_API_BASE_URL + urlPath;
   const cookieToken = getCookie("orio-attendance-token")?.toString() || null;
   const authToken = cookieToken || token;
 

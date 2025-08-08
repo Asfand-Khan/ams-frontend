@@ -119,7 +119,7 @@ const DataTable = <TData, TValue>({
             <Table className='relative'>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow className='bg-gray-50 sticky z-20 top-0' key={headerGroup.id}>
+                  <TableRow className='bg-gray-50 sticky z-10 top-0' key={headerGroup.id}>
                     {headerGroup.headers.map((header) => {
                       return (
                         <TableHead key={header.id}>

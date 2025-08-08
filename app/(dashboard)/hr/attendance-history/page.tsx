@@ -1,9 +1,7 @@
-import React from 'react'
+import AttendanceHistoryList from "@/components/ui/attendance-history/attendance-history-list";
 
 const Page = () => {
-  return (
-    <div>Page</div>
-  )
-}
+  return <AttendanceHistoryList />;
+};
 
-export default Page
+export default Page;

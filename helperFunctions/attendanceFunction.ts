@@ -1,4 +1,8 @@
-import { AttendanceResponse, DailyAttendanceSummaryResponse, SingleAttendanceResponse } from "@/types/attendanceTypes";
+import {
+  AttendanceResponse,
+  DailyAttendanceSummaryResponse,
+  SingleAttendanceResponse,
+} from "@/types/attendanceTypes";
 import { axiosFunction } from "@/utils/axiosFunction";
 
 export const fetchAttendanceListByDate = async (data: {
@@ -33,15 +37,34 @@ export const fetchAttendanceById = async (data: {
   }
 };
 
-export const fetchDailyAttendanceSummary = async (): Promise<DailyAttendanceSummaryResponse | null> => {
+export const fetchDailyAttendanceSummary =
+  async (): Promise<DailyAttendanceSummaryResponse | null> => {
+    try {
+      const response = await axiosFunction({
+        method: "GET",
+        urlPath: "/attendances/daily-attendance-summary",
+      });
+      return response;
+    } catch (err) {
+      console.error("Error fetching daily attendance summary:", err);
+      return null;
+    }
+  };
+
+export const fetchAttendanceHistory = async (data: {
+  employee_id: number;
+  start_date: string;
+  end_date: string;
+}): Promise<AttendanceResponse | null> => {
   try {
     const response = await axiosFunction({
-      method: "GET",
-      urlPath: "/attendances/daily-attendance-summary",
+      method: "POST",
+      urlPath: "/attendances",
+      data,
     });
     return response;
   } catch (err) {
-    console.error("Error fetching daily attendance summary:", err);
+    console.error("Error fetching attendance history:", err);
     return null;
   }
 };

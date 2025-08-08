@@ -68,3 +68,37 @@ export type DailyAttendanceSummaryResponse = {
   message: string;
   payload: DailyAttendanceSummaryPayload[];
 };
+
+export type AttendanceSummaryResponse = {
+  status: number;
+  message: string;
+  payload: AttendanceSummaryPayload[];
+};
+
+export type AttendanceSummaryPayload = {
+  employee_id: number;
+  employee_name: string;
+  department_name: string;
+  designation_title: string;
+  total_days: string;
+  working_days: string;
+  present_days: string;
+  absent_days: string;
+  leave_days: string;
+  weekend_days: string;
+  weekend_attendance_days: string;
+  holiday_days: string;
+  work_from_home_days: string;
+  on_time_check_ins: string;
+  late_check_ins: string;
+  manual_check_ins: string;
+  on_time_check_outs: string;
+  early_leave_check_outs: string;
+  early_go_check_outs: string;
+  overtime_check_outs: string;
+  half_day_check_outs: string;
+  manual_check_outs: string;
+  actual_work_seconds: string; // You may convert this to `number` if needed
+  expected_work_hours: string; // This seems like total hours (e.g., "184")
+  actual_work_hours: string;   // This is in "HH:MM:SS" format
+};
