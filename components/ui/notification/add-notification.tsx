@@ -23,6 +23,16 @@ const AddNotification = () => {
     return getRights(LISTING_ROUTE);
   }, [LISTING_ROUTE]);
 
+  const {
+    data: userListResponse,
+    isLoading: userListLoading,
+    isError: userListIsError,
+    error,
+  } = useQuery<UsersResponse | null>({
+    queryKey: ["user-list"],
+    queryFn: fetchUserList,
+  });
+
   if (rights?.can_create !== "1") {
     setTimeout(() => {
       router.back();
@@ -34,16 +44,6 @@ const AddNotification = () => {
       />
     );
   }
-
-  const {
-    data: userListResponse,
-    isLoading: userListLoading,
-    isError: userListIsError,
-    error,
-  } = useQuery<UsersResponse | null>({
-    queryKey: ["user-list"],
-    queryFn: fetchUserList,
-  });
 
   // Loading state
   if (userListLoading) {

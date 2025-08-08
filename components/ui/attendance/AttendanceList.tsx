@@ -57,8 +57,6 @@ const AttendanceList = () => {
   const {
     data: dailyAttendanceSummaryResponse,
     isLoading: dailyAttendanceSummaryLoading,
-    isError: dailyAttendanceSummaryIsError,
-    error: dailyAttendanceSummaryError,
   } = useQuery<DailyAttendanceSummaryResponse | null>({
     queryKey: ["daily-attendance-summary"],
     queryFn: fetchDailyAttendanceSummary,
@@ -220,7 +218,7 @@ const AttendanceList = () => {
   }
 
   // Loading state
-  if (attendanceListLoading) {
+  if (attendanceListLoading || dailyAttendanceSummaryLoading) {
     return <LoadingState />;
   }
 

@@ -31,7 +31,6 @@ import { fetchAssetComplaintList } from "@/helperFunctions/assetComplaintFunctio
 import AssetComplaintDatatable from "./asset-complaint-datatable";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
