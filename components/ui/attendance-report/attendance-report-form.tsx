@@ -22,14 +22,7 @@ import { convertToCSV, triggerCSVDownload } from "@/utils/csvHelpers";
 
 const AttendanceReportForm = () => {
   // Form
-  const {
-    handleSubmit,
-    formState: { errors },
-    reset,
-    control,
-    getValues,
-    trigger,
-  } = useForm({
+  const { reset, control, getValues, trigger } = useForm({
     resolver: zodResolver(OverallAttendanceSummaryReportSchema),
   });
 
