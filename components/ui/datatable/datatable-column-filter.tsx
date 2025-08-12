@@ -70,7 +70,7 @@ const DataTableColumnFilter = <TData, TValue>({ column }: DataTableColumnFilterP
     }
 
     const filteredOptions = filterOptions.filter((option) =>
-        option.label.toLowerCase().includes(searchValue.toLowerCase()),
+        option.label?.toLowerCase()?.includes(searchValue?.toLowerCase()),
     )
 
     return (

@@ -186,7 +186,7 @@ const AddNotificationForm: React.FC<AddNotificationFormProps> = ({ users }) => {
           <div className="space-y-2">
             <Label htmlFor="message" className="gap-1 text-gray-600">
               Notification Message
-              <span className="text-red-500 text-md"></span>
+              <span className="text-red-500 text-md">*</span>
             </Label>
             <Textarea
               placeholder="Enter Notification Message"
