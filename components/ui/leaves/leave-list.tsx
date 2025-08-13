@@ -61,7 +61,6 @@ const LeaveList = () => {
     trigger,
     getValues,
     setValue,
-    reset,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(leaveRequestApproveRejectSchema),

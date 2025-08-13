@@ -64,7 +64,6 @@ const AttendanceCorrectionList = () => {
     trigger,
     getValues,
     setValue,
-    reset,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(attendanceCorrectionApproveRejectSchema),
