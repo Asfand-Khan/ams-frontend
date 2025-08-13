@@ -19,6 +19,17 @@ import { fetchNotificationList } from "@/helperFunctions/notificationFunction";
 import { Badge } from "../foundations/badge";
 import NotificationDatatable from "./notification-datatable";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../shadcn/dialog";
+import { Button } from "../shadcn/button";
 
 const NotificationList = () => {
   // Constants
@@ -85,7 +96,34 @@ const NotificationList = () => {
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Message" />
       ),
-      cell: ({ row }) => <div>{row.getValue("message") ?? "---"}</div>,
+      cell: ({ row }) => (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="link">
+              View
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Message</DialogTitle>
+              <DialogDescription>Below is the message.</DialogDescription>
+              <hr />
+            </DialogHeader>
+            <div className="flex items-center gap-2">
+              <div className="grid flex-1 gap-2">
+                {row.getValue("message") ?? "---"}
+              </div>
+            </div>
+            <DialogFooter className="sm:justify-start mt-2">
+              <DialogClose asChild>
+                <Button type="button" variant="outline">
+                  Close
+                </Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ),
     },
     {
       accessorKey: "type",

@@ -31,6 +31,7 @@ import { fetchAssetComplaintList } from "@/helperFunctions/assetComplaintFunctio
 import AssetComplaintDatatable from "./asset-complaint-datatable";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -207,6 +208,42 @@ const AssetComplaintList = () => {
         <DatatableColumnHeader column={column} title="Category" />
       ),
       cell: ({ row }) => <div>{row.getValue("category") ?? "---"}</div>,
+    },
+    {
+      accessorKey: "reason",
+      header: ({ column }) => (
+        <DatatableColumnHeader column={column} title="Reason" />
+      ),
+      cell: ({ row }) => (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="link">
+              View
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Reason</DialogTitle>
+              <DialogDescription>
+                Below is the given reason for the correction.
+              </DialogDescription>
+              <hr />
+            </DialogHeader>
+            <div className="flex items-center gap-2">
+              <div className="grid flex-1 gap-2">
+                {row.getValue("reason") ?? "---"}
+              </div>
+            </div>
+            <DialogFooter className="sm:justify-start mt-2">
+              <DialogClose asChild>
+                <Button type="button" variant="outline">
+                  Close
+                </Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ),
     },
     {
       accessorKey: "status",
