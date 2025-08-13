@@ -32,6 +32,22 @@ import { Badge } from "../foundations/badge";
 import { axiosFunction, axiosReturnType } from "@/utils/axiosFunction";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  AttendanceCorrectionApproveReject,
+  attendanceCorrectionApproveRejectSchema,
+} from "@/schemas/attendanceCorrectionSchema";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../shadcn/dialog";
+import { Input } from "../shadcn/input";
 
 const AttendanceCorrectionList = () => {
   const router = useRouter();
@@ -42,6 +58,17 @@ const AttendanceCorrectionList = () => {
   const rights = useMemo(() => {
     return getRights(pathname);
   }, [pathname]);
+
+  const {
+    register,
+    trigger,
+    getValues,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(attendanceCorrectionApproveRejectSchema),
+  });
 
   // Fetch attendance correction list data using react-query
   const {
@@ -93,16 +120,14 @@ const AttendanceCorrectionList = () => {
   }, [attendanceCorrectionListResponse]);
 
   // Mutations
-  const addAttendanceMutation = useMutation<
+  const attendanceCorrectionApproveRejectMutation = useMutation<
     axiosReturnType,
     AxiosError<any>,
-    {
-      attendance_correction_id: number;
-      employee_id: number;
-      status: string;
-      remarks: string;
-    }
+    AttendanceCorrectionApproveReject
   >({
+    onMutate: () => {
+      toast.info("Please wait...");
+    },
     mutationFn: (record) => {
       return axiosFunction({
         method: "POST",
@@ -248,38 +273,122 @@ const AttendanceCorrectionList = () => {
         const record = row.original;
         return (
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => {
-                toast.info("Please wait...");
-                addAttendanceMutation.mutate({
-                  attendance_correction_id: record.id,
-                  employee_id: record.employee_id,
-                  remarks: "Approved",
-                  status: "approved",
-                });
-              }}
-              disabled={record.status !== "pending"}
-            >
-              Approve
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => {
-                toast.info("Please wait...");
-                addAttendanceMutation.mutate({
-                  attendance_correction_id: record.id,
-                  employee_id: record.employee_id,
-                  remarks: "Rejected",
-                  status: "rejected",
-                });
-              }}
-              disabled={record.status !== "pending"}
-            >
-              Reject
-            </Button>
+            <form>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    disabled={record.status !== "pending"}
+                  >
+                    Approve
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Approve Remarks</DialogTitle>
+                    <DialogDescription>
+                      Please enter the remarks for approval.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex items-center gap-2">
+                    <div className="grid flex-1 gap-2">
+                      <Input
+                        type="text"
+                        placeholder="Enter approve remarks"
+                        {...register("remarks")}
+                      />
+                      {errors.remarks && (
+                        <span className="text-destructive">
+                          {errors.remarks.message}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <DialogFooter className="sm:justify-start">
+                    <Button
+                      type="submit"
+                      variant="secondary"
+                      onClick={async () => {
+                        setValue("attendance_correction_id", record.id);
+                        setValue("status", "approved");
+                        setValue("employee_id", record.employee_id);
+                        const remarks = getValues("remarks");
+                        if (remarks.length === 0) {
+                          toast.error("Remarks cannot be empty");
+                          return;
+                        }
+                        const isValid = await trigger();
+                        if (isValid) {
+                          const formData = getValues();
+                          onSubmit(formData);
+                        }
+                      }}
+                    >
+                      Submit
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </form>
+            <form>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    disabled={record.status !== "pending"}
+                  >
+                    Reject
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Reject Remarks</DialogTitle>
+                    <DialogDescription>
+                      Please enter the remarks for rejection.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex items-center gap-2">
+                    <div className="grid flex-1 gap-2">
+                      <Input
+                        type="text"
+                        placeholder="Enter reject remarks"
+                        {...register("remarks")}
+                      />
+                      {errors.remarks && (
+                        <span className="text-destructive">
+                          {errors.remarks.message}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <DialogFooter className="sm:justify-start">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={async () => {
+                        setValue("attendance_correction_id", record.id);
+                        setValue("status", "rejected");
+                        setValue("employee_id", record.employee_id);
+                        const remarks = getValues("remarks");
+                        if (remarks.length === 0) {
+                          toast.error("Remarks cannot be empty");
+                          return;
+                        }
+                        const isValid = await trigger();
+                        if (isValid) {
+                          const formData = getValues();
+                          onSubmit(formData);
+                        }
+                      }}
+                    >
+                      Submit
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </form>
           </div>
         );
       },
@@ -374,6 +483,11 @@ const AttendanceCorrectionList = () => {
       <Empty title="Not Found" description="No Attendance Correction Found" />
     );
   }
+
+  const onSubmit = (data: AttendanceCorrectionApproveReject) => {
+    console.log(data);
+    attendanceCorrectionApproveRejectMutation.mutate(data);
+  };
 
   const handleRefetch = async () => {
     const { isSuccess } = await refetch();

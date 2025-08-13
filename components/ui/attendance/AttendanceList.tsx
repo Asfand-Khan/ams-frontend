@@ -35,6 +35,7 @@ import {
 } from "@/helperFunctions/attendanceFunction";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { Badge } from "../foundations/badge";
 
 const AttendanceList = () => {
   // Constants
@@ -143,11 +144,51 @@ const AttendanceList = () => {
       cell: ({ row }) => <div>{row.getValue("check_in_time") ?? "---"}</div>,
     },
     {
+      accessorKey: "check_in_status",
+      header: ({ column }) => (
+        <DatatableColumnHeader column={column} title="Check In Status" />
+      ),
+      cell: ({ row }) => {
+        const status = row.original.check_in_status?.split("_").join(" ");
+        return (
+          <>
+            {status !== undefined ? (
+              <Badge variant="outline" className="px-3 py-1 capitalize">
+                {status}
+              </Badge>
+            ) : (
+              "---"
+            )}
+          </>
+        );
+      },
+    },
+    {
       accessorKey: "check_out_time",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Check Out" />
       ),
       cell: ({ row }) => <div>{row.getValue("check_out_time") ?? "---"}</div>,
+    },
+    {
+      accessorKey: "check_out_status",
+      header: ({ column }) => (
+        <DatatableColumnHeader column={column} title="Check Out Status" />
+      ),
+      cell: ({ row }) => {
+        const status = row.original.check_out_status?.split("_").join(" ");
+        return (
+          <>
+            {status !== undefined ? (
+              <Badge variant="outline" className="px-3 py-1 capitalize">
+                {status}
+              </Badge>
+            ) : (
+              "---"
+            )}
+          </>
+        );
+      },
     },
     {
       accessorKey: "work_hours",
@@ -157,55 +198,84 @@ const AttendanceList = () => {
       cell: ({ row }) => <div>{row.getValue("work_hours") ?? "---"}</div>,
     },
     {
-      id: "actions",
-      header: "Actions",
+      accessorKey: "day_status",
+      header: ({ column }) => (
+        <DatatableColumnHeader column={column} title="Day Status" />
+      ),
       cell: ({ row }) => {
-        const record = row.original;
+        const status = row.original.day_status?.split("_").join(" ");
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {rights?.can_edit === "1" && (
-                <DropdownMenuItem
-                  onClick={() => {
-                    if (record.id == null || record.id === undefined) {
-                      toast.info("Attendance Does not exist, try adding.");
-                    } else {
-                      setAttendanceId(record.id);
-                    }
-                  }}
-                  asChild
-                >
-                  <Link
-                    href={
-                      record.id == null || record.id === undefined
-                        ? "#"
-                        : EDIT_URL
-                    }
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </Link>
-                </DropdownMenuItem>
-              )}
-              {rights?.can_edit === "1" && (
-                <DropdownMenuItem>
-                  <Trash className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <>
+            {status !== undefined ? (
+              <Badge
+                variant={
+                  status === "present"
+                    ? "success"
+                    : status === "absent"
+                    ? "danger"
+                    : "outline"
+                }
+                className="px-3 py-1 capitalize"
+              >
+                {status}
+              </Badge>
+            ) : (
+              "---"
+            )}
+          </>
         );
       },
     },
+    // {
+    //   id: "actions",
+    //   header: "Actions",
+    //   cell: ({ row }) => {
+    //     const record = row.original;
+    //     return (
+    //       <DropdownMenu>
+    //         <DropdownMenuTrigger asChild>
+    //           <Button variant="ghost" className="h-8 w-8 p-0">
+    //             <span className="sr-only">Open menu</span>
+    //             <MoreHorizontal />
+    //           </Button>
+    //         </DropdownMenuTrigger>
+    //         <DropdownMenuContent align="end">
+    //           <DropdownMenuLabel>Actions</DropdownMenuLabel>
+    //           <DropdownMenuSeparator />
+    //           {rights?.can_edit === "1" && (
+    //             <DropdownMenuItem
+    //               onClick={() => {
+    //                 if (record.id == null || record.id === undefined) {
+    //                   toast.info("Attendance Does not exist, try adding.");
+    //                 } else {
+    //                   setAttendanceId(record.id);
+    //                 }
+    //               }}
+    //               asChild
+    //             >
+    //               <Link
+    //                 href={
+    //                   record.id == null || record.id === undefined
+    //                     ? "#"
+    //                     : EDIT_URL
+    //                 }
+    //               >
+    //                 <Edit className="mr-2 h-4 w-4" />
+    //                 Edit
+    //               </Link>
+    //             </DropdownMenuItem>
+    //           )}
+    //           {rights?.can_edit === "1" && (
+    //             <DropdownMenuItem>
+    //               <Trash className="mr-2 h-4 w-4" />
+    //               Delete
+    //             </DropdownMenuItem>
+    //           )}
+    //         </DropdownMenuContent>
+    //       </DropdownMenu>
+    //     );
+    //   },
+    // },
   ];
 
   // Rights Redirection
