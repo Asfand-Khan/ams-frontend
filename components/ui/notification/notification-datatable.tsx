@@ -6,10 +6,14 @@ import { NotificationPayload } from "@/types/notificationTypes";
 interface NotificationDatatableProps {
   columns: ColumnDef<NotificationPayload>[];
   payload: NotificationPayload[];
+  isRefetching: boolean;
+  handleRefetch: () => void;
 }
 const NotificationDatatable: React.FC<NotificationDatatableProps> = ({
   columns,
   payload,
+  handleRefetch,
+  isRefetching,
 }) => {
   return (
     <>
@@ -17,6 +21,9 @@ const NotificationDatatable: React.FC<NotificationDatatableProps> = ({
         columns={columns}
         data={payload}
         title="List of all notifications in the system"
+        handleRefetch={handleRefetch}
+        isRefetching={isRefetching}
+        showRefetch
       />
     </>
   );

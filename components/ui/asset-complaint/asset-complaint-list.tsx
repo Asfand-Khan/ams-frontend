@@ -76,6 +76,8 @@ const AssetComplaintList = () => {
     isLoading: assetComplaintListLoading,
     isError: assetComplaintListIsError,
     error,
+    isFetching,
+    refetch,
   } = useQuery<AssetComplaintsResponse | null>({
     queryKey: ["asset-complaint-list"],
     queryFn: fetchAssetComplaintList,
@@ -467,12 +469,21 @@ const AssetComplaintList = () => {
     return <Empty title="Not Found" description="No Asset Complaint Found" />;
   }
 
+  const handleRefetch = async () => {
+    const { isSuccess } = await refetch();
+    if (isSuccess) {
+      toast.success("Refetched successfully");
+    }
+  };
+
   return (
     <>
       <SubNav title="Asset Complaint List" />
       <AssetComplaintDatatable
         columns={columns}
         payload={assetComplaintListResponse.payload}
+        handleRefetch={handleRefetch}
+        isRefetching={isFetching}
       />
     </>
   );

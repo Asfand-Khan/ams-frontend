@@ -26,6 +26,7 @@ import { Badge } from "../foundations/badge";
 import { HolidayPayload, HolidayResponse } from "@/types/holidayTypes";
 import { fetchHolidayList } from "@/helperFunctions/holidayFunction";
 import HolidayDatatable from "./holiday-datatable";
+import { toast } from "sonner";
 
 const HolidayList = () => {
   const ADD_URL = "/hr/holidays/add-holiday";
@@ -42,6 +43,8 @@ const HolidayList = () => {
     isLoading: holidayListLoading,
     isError: holidayListIsError,
     error,
+    refetch,
+    isFetching
   } = useQuery<HolidayResponse | null>({
     queryKey: ["holiday-list"],
     queryFn: fetchHolidayList,
@@ -204,6 +207,13 @@ const HolidayList = () => {
     return <Empty title="Not Found" description="No Holiday Found" />;
   }
 
+  const handleRefetch = async () => {
+      const { isSuccess } = await refetch();
+      if (isSuccess) {
+        toast.success("Refetched successfully");
+      }
+    };
+
   return (
     <>
       <SubNav
@@ -214,6 +224,8 @@ const HolidayList = () => {
       <HolidayDatatable
         columns={columns}
         payload={holidayListResponse.payload}
+        handleRefetch={handleRefetch}
+        isRefetching={isFetching}
       />
     </>
   );

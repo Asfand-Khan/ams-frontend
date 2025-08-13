@@ -1,19 +1,19 @@
 "use client";
 
-import React, { useState } from 'react'
+import React, { useState } from "react";
 import {
-  ColumnDef,  // 
-  ColumnFiltersState, FilterFn, // State for column filters
+  ColumnDef, //
+  ColumnFiltersState,
+  FilterFn, // State for column filters
   SortingState, // State for sorting
-  VisibilityState,  // State for column visibility
+  VisibilityState, // State for column visibility
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-
   useReactTable,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
 
 import { ScrollArea, ScrollBar } from "@/components/ui/shadcn/scroll-area";
 import {
@@ -23,17 +23,23 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/shadcn/table"
-import DataTablePagination from '@/components/ui/datatable/datatable-pagination';
-import DataTableGlobalFilter from '@/components/ui/datatable/datatable-global-filter';
-import DataTableColumnVisibility from '@/components/ui/datatable/datatable-column-visibility';
-import DataTableExport from '@/components/ui/datatable/datatable-export';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../shadcn/card';
-
+} from "@/components/ui/shadcn/table";
+import DataTablePagination from "@/components/ui/datatable/datatable-pagination";
+import DataTableGlobalFilter from "@/components/ui/datatable/datatable-global-filter";
+import DataTableColumnVisibility from "@/components/ui/datatable/datatable-column-visibility";
+import DataTableExport from "@/components/ui/datatable/datatable-export";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../shadcn/card";
+import RefetchDatatable from "./datatable-refetch-data";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
-  data: TData[],
+  data: TData[];
   excludeExportColumns?: string[]; // Optional prop to exclude specific columns from export
   exportFilename?: string; // Optional prop for export filename
   enableExport?: boolean; // Optional prop to enable export functionality
@@ -41,6 +47,9 @@ interface DataTableProps<TData, TValue> {
   enablePagination?: boolean; // Optional prop to enable pagination
   enableColumnVisibility?: boolean; // Optional prop to enable column visibility
   title: string; // Title for the data table
+  showRefetch?: boolean;
+  isRefetching?: boolean;
+  handleRefetch?: () => void;
 }
 
 // Custom filter function for multi-select
@@ -49,7 +58,6 @@ const multiSelectFilter: FilterFn<unknown> = (row, columnId, filterValue) => {
   const cellValue = String(row.getValue(columnId));
   return filterValue.includes(cellValue);
 };
-
 
 const DataTable = <TData, TValue>({
   columns,
@@ -61,15 +69,16 @@ const DataTable = <TData, TValue>({
   enablePagination = true,
   enableColumnVisibility = true,
   title = "Data Table",
+  handleRefetch,
+  isRefetching,
+  showRefetch
 }: DataTableProps<TData, TValue>) => {
-
   // State management for sorting, column filters, visibility, and row selection
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = useState({})
-  const [globalFilter, setGlobalFilter] = useState<string>("")
-
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = useState({});
+  const [globalFilter, setGlobalFilter] = useState<string>("");
 
   // Initialize the table with the provided data and columns
   // and the state management functions for sorting, filtering, visibility, and selection
@@ -93,44 +102,56 @@ const DataTable = <TData, TValue>({
       columnFilters,
       columnVisibility,
       rowSelection,
-      globalFilter
-    }
-  })
+      globalFilter,
+    },
+  });
 
   return (
     <>
-      <Card className='w-full shadow-none border-none'>
-        <CardHeader className='border-b gap-0'>
+      <Card className="w-full shadow-none border-none">
+        <CardHeader className="border-b gap-0">
           <CardTitle>{title}</CardTitle>
           {/* <CardDescription>List of all users in the system.</CardDescription> */}
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between pb-6">
             <div>
-              {enableGlobalFilter && (<DataTableGlobalFilter table={table} />)}
+              {enableGlobalFilter && <DataTableGlobalFilter table={table} />}
             </div>
-            <div className='flex items-center gap-3'>
-              {enableColumnVisibility && (<DataTableColumnVisibility table={table} />)}
-              {enableExport && (<DataTableExport table={table} filename={exportFilename} excludeColumns={excludeExportColumns} />)}
+            <div className="flex items-center gap-3">
+              {showRefetch && <RefetchDatatable handleRefetch={handleRefetch} isRefetching={isRefetching} />}
+              {enableColumnVisibility && (
+                <DataTableColumnVisibility table={table} />
+              )}
+              {enableExport && (
+                <DataTableExport
+                  table={table}
+                  filename={exportFilename}
+                  excludeColumns={excludeExportColumns}
+                />
+              )}
             </div>
           </div>
           <ScrollArea className="h-[420px] rounded-md w-full">
             <ScrollBar orientation="vertical" />
-            <Table className='relative'>
+            <Table className="relative">
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow className='bg-gray-50 sticky z-10 top-0' key={headerGroup.id}>
+                  <TableRow
+                    className="bg-gray-50 sticky z-10 top-0"
+                    key={headerGroup.id}
+                  >
                     {headerGroup.headers.map((header) => {
                       return (
                         <TableHead key={header.id}>
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
                         </TableHead>
-                      )
+                      );
                     })}
                   </TableRow>
                 ))}
@@ -167,14 +188,12 @@ const DataTable = <TData, TValue>({
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </CardContent>
-        <CardFooter className='border-t'>
-          {enablePagination && (
-            <DataTablePagination table={table} />
-          )}
+        <CardFooter className="border-t">
+          {enablePagination && <DataTablePagination table={table} />}
         </CardFooter>
       </Card>
     </>
-  )
-}
+  );
+};
 
-export default DataTable
+export default DataTable;

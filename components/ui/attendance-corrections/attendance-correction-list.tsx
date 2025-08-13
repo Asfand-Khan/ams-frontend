@@ -49,6 +49,8 @@ const AttendanceCorrectionList = () => {
     isLoading: attendanceCorrectionListLoading,
     isError: attendanceCorrectionListIsError,
     error,
+    refetch,
+    isFetching,
   } = useQuery<AttendanceCorrectionResponse | null>({
     queryKey: ["attendance-correction-list"],
     queryFn: fetchAttendanceCorrectionList,
@@ -373,12 +375,21 @@ const AttendanceCorrectionList = () => {
     );
   }
 
+  const handleRefetch = async () => {
+    const { isSuccess } = await refetch();
+    if (isSuccess) {
+      toast.success("Refetched successfully");
+    }
+  };
+
   return (
     <>
       <SubNav title="Attendance Correction List" />
       <AttendanceCorrectionDatatable
         columns={columns}
         payload={attendanceCorrectionListResponse.payload}
+        handleRefetch={handleRefetch}
+        isRefetching={isFetching}
       />
     </>
   );

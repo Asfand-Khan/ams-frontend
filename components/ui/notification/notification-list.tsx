@@ -18,6 +18,7 @@ import {
 import { fetchNotificationList } from "@/helperFunctions/notificationFunction";
 import { Badge } from "../foundations/badge";
 import NotificationDatatable from "./notification-datatable";
+import { toast } from "sonner";
 
 const NotificationList = () => {
   // Constants
@@ -36,6 +37,8 @@ const NotificationList = () => {
     isLoading: notificationListLoading,
     isError: notificationListIsError,
     error,
+    refetch,
+    isFetching,
   } = useQuery<NotificationResponse | null>({
     queryKey: ["notification-list"],
     queryFn: fetchNotificationList,
@@ -173,6 +176,13 @@ const NotificationList = () => {
     return <Empty title="Not Found" description="No Notification Found" />;
   }
 
+  const handleRefetch = async () => {
+    const { isSuccess } = await refetch();
+    if (isSuccess) {
+      toast.success("Refetched successfully");
+    }
+  };
+
   return (
     <>
       <SubNav
@@ -183,6 +193,8 @@ const NotificationList = () => {
       <NotificationDatatable
         columns={columns}
         payload={notificationListResponse.payload}
+        handleRefetch={handleRefetch}
+        isRefetching={isFetching}
       />
     </>
   );

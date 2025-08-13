@@ -46,6 +46,8 @@ const LeaveList = () => {
     isLoading: leaveListLoading,
     isError: leaveListIsError,
     error,
+    refetch,
+    isFetching,
   } = useQuery<LeaveResponse | null>({
     queryKey: ["leave-list"],
     queryFn: fetchLeaveList,
@@ -326,10 +328,22 @@ const LeaveList = () => {
     return <Empty title="Not Found" description="No Leave Found" />;
   }
 
+  const handleRefetch = async () => {
+      const { isSuccess } = await refetch();
+      if (isSuccess) {
+        toast.success("Refetched successfully");
+      }
+    };
+
   return (
     <>
       <SubNav title="Leave List" />
-      <LeaveDatatable columns={columns} payload={leaveListResponse.payload} />
+      <LeaveDatatable 
+        columns={columns} 
+        payload={leaveListResponse.payload}
+        handleRefetch={handleRefetch}
+        isRefetching={isFetching}
+      />
     </>
   );
 };

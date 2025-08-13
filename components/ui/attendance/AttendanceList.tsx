@@ -57,6 +57,8 @@ const AttendanceList = () => {
   const {
     data: dailyAttendanceSummaryResponse,
     isLoading: dailyAttendanceSummaryLoading,
+    refetch: refetchDailyAttendanceSummary,
+    isFetching: isFetchingDailyAttendanceSummary,
   } = useQuery<DailyAttendanceSummaryResponse | null>({
     queryKey: ["daily-attendance-summary"],
     queryFn: fetchDailyAttendanceSummary,
@@ -67,6 +69,8 @@ const AttendanceList = () => {
     isLoading: attendanceListLoading,
     isError: attendanceListIsError,
     error,
+    refetch,
+    isFetching,
   } = useQuery<AttendanceResponse | null>({
     queryKey: ["attendance-list"],
     queryFn: () =>
@@ -212,7 +216,7 @@ const AttendanceList = () => {
     return (
       <Empty
         title="Permission Denied"
-        description="You do not have permission to view branch listing."
+        description="You do not have permission to view attendance listing."
       />
     );
   }
@@ -234,6 +238,14 @@ const AttendanceList = () => {
   ) {
     return <Empty title="Not Found" description="No Attendance Found" />;
   }
+
+  const handleRefetch = async () => {
+    const { isSuccess } = await refetch();
+    const { isSuccess: isSuccess2 } = await refetchDailyAttendanceSummary();
+    if (isSuccess && isSuccess2) {
+      toast.success("Refetched successfully");
+    }
+  };
 
   return (
     <>
@@ -298,6 +310,10 @@ const AttendanceList = () => {
       <AttendancesDatatable
         columns={columns}
         payload={attendanceListResponse.payload}
+        handleRefetch={handleRefetch}
+        isRefetching={
+          isFetching || isFetchingDailyAttendanceSummary ? true : false
+        }
       />
     </>
   );
