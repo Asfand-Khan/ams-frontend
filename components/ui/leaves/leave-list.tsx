@@ -29,6 +29,22 @@ import { toast } from "sonner";
 import { fetchLeaveList } from "@/helperFunctions/leaveFunction";
 import { LeavePayload, LeaveResponse } from "@/types/leaveTypes";
 import LeaveDatatable from "./leave-datatable";
+import {
+  LeaveRequestApproveReject,
+  leaveRequestApproveRejectSchema,
+} from "@/schemas/leaveRequestSchema";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../shadcn/dialog";
+import { Input } from "../shadcn/input";
 
 const LeaveList = () => {
   const router = useRouter();
@@ -39,6 +55,17 @@ const LeaveList = () => {
   const rights = useMemo(() => {
     return getRights(pathname);
   }, [pathname]);
+
+  const {
+    register,
+    trigger,
+    getValues,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(leaveRequestApproveRejectSchema),
+  });
 
   // Fetch attendance correction list data using react-query
   const {
@@ -76,16 +103,10 @@ const LeaveList = () => {
   }, [leaveListResponse]);
 
   // Mutations
-  const approveRejectLeaveMutation = useMutation<
+  const leaveRequestApproveRejectMutation = useMutation<
     axiosReturnType,
     AxiosError<any>,
-    {
-      leave_id: number;
-      leave_type_id: number;
-      employee_id: number;
-      status: string;
-      remarks: string;
-    }
+    LeaveRequestApproveReject
   >({
     mutationFn: (record) => {
       return axiosFunction({
@@ -204,40 +225,124 @@ const LeaveList = () => {
         const record = row.original;
         return (
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => {
-                toast.info("Please wait...");
-                approveRejectLeaveMutation.mutate({
-                  leave_id: record.leave_id,
-                  employee_id: record.employee_id,
-                  leave_type_id: record.leave_type_id,
-                  remarks: "Approved",
-                  status: "approved",
-                });
-              }}
-              disabled={record.STATUS !== "pending"}
-            >
-              {record.STATUS === "approved" ? "Approved" : "Approve"}
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => {
-                toast.info("Please wait...");
-                approveRejectLeaveMutation.mutate({
-                  leave_id: record.leave_id,
-                  employee_id: record.employee_id,
-                  leave_type_id: record.leave_type_id,
-                  remarks: "Rejected",
-                  status: "rejected",
-                });
-              }}
-              disabled={record.STATUS !== "pending"}
-            >
-              {record.STATUS === "rejected" ? "Rejected" : "Reject"}
-            </Button>
+            <form>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    disabled={record.STATUS !== "pending"}
+                  >
+                    Approve
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Approve Remarks</DialogTitle>
+                    <DialogDescription>
+                      Please enter the remarks for approval.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex items-center gap-2">
+                    <div className="grid flex-1 gap-2">
+                      <Input
+                        type="text"
+                        placeholder="Enter approve remarks"
+                        {...register("remarks")}
+                      />
+                      {errors.remarks && (
+                        <span className="text-destructive">
+                          {errors.remarks.message}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <DialogFooter className="sm:justify-start">
+                    <Button
+                      type="submit"
+                      variant="secondary"
+                      onClick={async () => {
+                        setValue("leave_id", record.leave_id);
+                        setValue("leave_type_id", record.leave_type_id);
+                        setValue("status", "approved");
+                        setValue("employee_id", record.employee_id);
+                        const remarks = getValues("remarks");
+                        if (remarks.length === 0) {
+                          toast.error("Remarks cannot be empty");
+                          return;
+                        }
+                        const isValid = await trigger();
+                        if (isValid) {
+                          const formData = getValues();
+                          onSubmit(formData);
+                        }
+                      }}
+                    >
+                      Submit
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </form>
+            <form>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    disabled={record.STATUS !== "pending"}
+                  >
+                    Reject
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Reject Remarks</DialogTitle>
+                    <DialogDescription>
+                      Please enter the remarks for rejection.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex items-center gap-2">
+                    <div className="grid flex-1 gap-2">
+                      <Input
+                        type="text"
+                        placeholder="Enter approve remarks"
+                        {...register("remarks")}
+                      />
+                      {errors.remarks && (
+                        <span className="text-destructive">
+                          {errors.remarks.message}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <DialogFooter className="sm:justify-start">
+                    <Button
+                      type="submit"
+                      variant="secondary"
+                      onClick={async () => {
+                        setValue("leave_id", record.leave_id);
+                        setValue("leave_type_id", record.leave_type_id);
+                        setValue("status", "rejected");
+                        setValue("employee_id", record.employee_id);
+                        const remarks = getValues("remarks");
+                        if (remarks.length === 0) {
+                          toast.error("Remarks cannot be empty");
+                          return;
+                        }
+                        const isValid = await trigger();
+                        if (isValid) {
+                          const formData = getValues();
+                          onSubmit(formData);
+                        }
+                      }}
+                    >
+                      Submit
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </form>
           </div>
         );
       },
@@ -328,18 +433,23 @@ const LeaveList = () => {
     return <Empty title="Not Found" description="No Leave Found" />;
   }
 
+  const onSubmit = (data: LeaveRequestApproveReject) => {
+    console.log(data);
+    leaveRequestApproveRejectMutation.mutate(data);
+  };
+
   const handleRefetch = async () => {
-      const { isSuccess } = await refetch();
-      if (isSuccess) {
-        toast.success("Refetched successfully");
-      }
-    };
+    const { isSuccess } = await refetch();
+    if (isSuccess) {
+      toast.success("Refetched successfully");
+    }
+  };
 
   return (
     <>
       <SubNav title="Leave List" />
-      <LeaveDatatable 
-        columns={columns} 
+      <LeaveDatatable
+        columns={columns}
         payload={leaveListResponse.payload}
         handleRefetch={handleRefetch}
         isRefetching={isFetching}
