@@ -206,14 +206,6 @@ const NotificationList = () => {
     return <Error err={error?.message} />;
   }
 
-  // Empty state
-  if (
-    !notificationListResponse?.payload ||
-    notificationListResponse.payload.length === 0
-  ) {
-    return <Empty title="Not Found" description="No Notification Found" />;
-  }
-
   const handleRefetch = async () => {
     const { isSuccess } = await refetch();
     if (isSuccess) {
@@ -228,12 +220,17 @@ const NotificationList = () => {
         urlPath={ADD_URL}
         addBtnTitle="Add Notification"
       />
-      <NotificationDatatable
-        columns={columns}
-        payload={notificationListResponse.payload}
-        handleRefetch={handleRefetch}
-        isRefetching={isFetching}
-      />
+      {!notificationListResponse?.payload ||
+      notificationListResponse.payload.length === 0 ? (
+        <Empty title="Not Found" description="No Notification Found" />
+      ) : (
+        <NotificationDatatable
+          columns={columns}
+          payload={notificationListResponse.payload}
+          handleRefetch={handleRefetch}
+          isRefetching={isFetching}
+        />
+      )}
     </>
   );
 };
