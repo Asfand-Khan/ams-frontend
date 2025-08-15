@@ -12,10 +12,6 @@ import { axiosFunction, axiosReturnType } from "@/utils/axiosFunction";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { Input } from "../shadcn/input";
-import {
-  designationSchema,
-  DesignationType,
-} from "@/schemas/designationSchema";
 import { DepartmentPayload } from "@/types/departmentTypes";
 import Select from "react-select";
 import { selectStyles } from "@/utils/selectStyles";
