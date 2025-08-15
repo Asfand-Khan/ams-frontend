@@ -196,13 +196,6 @@ const AssetComplaintList = () => {
       } as ColumnMeta,
     },
     {
-      accessorKey: "reason",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Reason" />
-      ),
-      cell: ({ row }) => <div>{row.getValue("reason") ?? "---"}</div>,
-    },
-    {
       accessorKey: "category",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Category" />
