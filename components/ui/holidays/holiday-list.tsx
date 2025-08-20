@@ -134,46 +134,46 @@ const HolidayList = () => {
         return <div>{createDate}</div>;
       },
     },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => {
-        const record = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {rights?.can_edit === "1" && (
-                <DropdownMenuItem
-                  onClick={() => {
-                    console.log("Edit: ", record.id);
-                  }}
-                  asChild
-                >
-                  <Link href={"#"}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </Link>
-                </DropdownMenuItem>
-              )}
-              {rights?.can_delete === "1" && (
-                <DropdownMenuItem>
-                  <Trash className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
+    // {
+    //   id: "actions",
+    //   header: "Actions",
+    //   cell: ({ row }) => {
+    //     const record = row.original;
+    //     return (
+    //       <DropdownMenu>
+    //         <DropdownMenuTrigger asChild>
+    //           <Button variant="ghost" className="h-8 w-8 p-0">
+    //             <span className="sr-only">Open menu</span>
+    //             <MoreHorizontal />
+    //           </Button>
+    //         </DropdownMenuTrigger>
+    //         <DropdownMenuContent align="end">
+    //           <DropdownMenuLabel>Actions</DropdownMenuLabel>
+    //           <DropdownMenuSeparator />
+    //           {rights?.can_edit === "1" && (
+    //             <DropdownMenuItem
+    //               onClick={() => {
+    //                 console.log("Edit: ", record.id);
+    //               }}
+    //               asChild
+    //             >
+    //               <Link href={"#"}>
+    //                 <Edit className="mr-2 h-4 w-4" />
+    //                 Edit
+    //               </Link>
+    //             </DropdownMenuItem>
+    //           )}
+    //           {rights?.can_delete === "1" && (
+    //             <DropdownMenuItem>
+    //               <Trash className="mr-2 h-4 w-4" />
+    //               Delete
+    //             </DropdownMenuItem>
+    //           )}
+    //         </DropdownMenuContent>
+    //       </DropdownMenu>
+    //     );
+    //   },
+    // },
   ];
 
 
