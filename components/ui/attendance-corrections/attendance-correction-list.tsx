@@ -7,17 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import React, { useMemo } from "react";
 import DatatableColumnHeader from "../datatable/datatable-column-header";
 import { ColumnMeta } from "@/types/dataTableTypes";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../shadcn/dropdown-menu";
 import { Button } from "../shadcn/button";
-import { Edit, MoreHorizontal, Trash } from "lucide-react";
-import Link from "next/link";
 import Empty from "../foundations/empty";
 import LoadingState from "../foundations/loading-state";
 import Error from "../foundations/error";

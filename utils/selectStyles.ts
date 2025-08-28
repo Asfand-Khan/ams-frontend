@@ -1,10 +1,11 @@
 import { StylesConfig } from "react-select";
 
-interface SelectOption {
+export interface SelectOption {
   value: number | string;
   label: string | number;
 }
 
+// Make it generic so it works with both single and multi
 export const selectStyles: StylesConfig<SelectOption, false> = {
   control: (provided, state) => ({
     ...provided,
@@ -33,7 +34,7 @@ export const selectStyles: StylesConfig<SelectOption, false> = {
       : state.isFocused
       ? "#f5f5f5"
       : "white",
-    color: state.isSelected ? "#0a0a0a" : "#0a0a0a",
+    color: "#0a0a0a",
     fontSize: "14px",
     "&:hover": {
       backgroundColor: "#f5f5f5",
