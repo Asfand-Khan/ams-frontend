@@ -50,6 +50,7 @@ export type MeetingInstancePayload = {
   location_type: "physical" | "virtual" | string;
   location_details: string;
   agenda: string;
+  minutes: string | null;
   host_name: string;
   attendees: string;
   is_active: boolean;

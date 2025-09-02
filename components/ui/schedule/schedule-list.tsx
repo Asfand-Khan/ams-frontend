@@ -19,21 +19,36 @@ import {
   MeetingResponse,
 } from "@/types/scheduleTypes";
 import ScheduleDatatable from "./schedule-datatable";
-import { Dialog, DialogContent } from "../shadcn/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../shadcn/dialog";
 import { axiosFunction, axiosReturnType } from "@/utils/axiosFunction";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 import ScheduleInstanceDatatable from "./schedule-instance-datatable";
+import dynamic from "next/dynamic";
+import { Loader2 } from "lucide-react";
+
+// Dynamic import of wrapper instead of direct library
+const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 
 const MeetingList = () => {
   const ADD_URL = "/hr/schedule/add-schedule";
   const router = useRouter();
   const pathname = usePathname();
 
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(false); // Instances dialog state
+  const [minutesOpen, setMinutesOpen] = React.useState(false); // Minutes dialog state
   const [meetingInstance, setMeetingInstance] = React.useState<
     MeetingInstancePayload[]
   >([]);
+  const editor = React.useRef<any>(null);
+  const [editorContent, setEditorContent] = React.useState<string>("");
+  const [row, setRow] = React.useState<MeetingInstancePayload>();
 
   const rights = useMemo(() => {
     return getRights(pathname);
@@ -99,6 +114,36 @@ const MeetingList = () => {
       const message = err?.response?.data?.message;
       console.log("Toggle Instance mutation error", err);
       toast.error(message);
+    },
+  });
+
+  const addMinutesMutation = useMutation<
+    axiosReturnType,
+    AxiosError<any>,
+    {
+      meeting_id: number;
+      meeting_instance_id: number;
+      minutes: string;
+    }
+  >({
+    mutationFn: (record) => {
+      return axiosFunction({
+        method: "POST",
+        urlPath: "/meetings/minutes",
+        data: record,
+        isServer: true,
+      });
+    },
+    onError: (err) => {
+      const message = err?.response?.data?.message;
+      console.log("Add minites mutation error", err);
+      toast.error(message);
+    },
+    onSuccess: (data) => {
+      const message = data?.message;
+      toast.success(message);
+      setMinutesOpen(false);
+      setOpen(false);
     },
   });
 
@@ -181,6 +226,27 @@ const MeetingList = () => {
       cell: ({ row }) => {
         const title = row.original.agenda;
         return <div>{title}</div>;
+      },
+    },
+    {
+      accessorKey: "id",
+      header: ({ column }) => (
+        <DatatableColumnHeader column={column} title="Minutes" />
+      ),
+      cell: ({ row }) => {
+        return (
+          <Button
+            size="sm"
+            variant="link"
+            onClick={() => {
+              setEditorContent(row.original.minutes as string);
+              setRow(row.original);
+              setMinutesOpen(true);
+            }}
+          >
+            View
+          </Button>
+        );
       },
     },
     {
@@ -272,27 +338,15 @@ const MeetingList = () => {
       cell: ({ row }) => {
         const meeting_id = row.original.id;
         return (
-          <>
-            <Button
-              size="sm"
-              variant="link"
-              onClick={() => {
-                fetchMeetingInstancesMutation.mutate({ meeting_id });
-              }}
-            >
-              View
-            </Button>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogContent className="sm:max-w-10/12">
-                <div className="flex items-center gap-2 overflow-x-auto">
-                  <ScheduleInstanceDatatable
-                    columns={instanceColumns}
-                    payload={meetingInstance}
-                  />
-                </div>
-              </DialogContent>
-            </Dialog>
-          </>
+          <Button
+            size="sm"
+            variant="link"
+            onClick={() => {
+              fetchMeetingInstancesMutation.mutate({ meeting_id });
+            }}
+          >
+            View
+          </Button>
         );
       },
     },
@@ -335,6 +389,10 @@ const MeetingList = () => {
     },
   ];
 
+  const handleEditorChange = (value: string) => {
+    setEditorContent(value);
+  };
+
   // Rights Redirection
   if (rights?.can_view !== "1") {
     setTimeout(() => {
@@ -373,10 +431,65 @@ const MeetingList = () => {
         addBtnTitle="Add Meeting"
         urlPath={ADD_URL}
       />
+
       <ScheduleDatatable
         columns={columns}
         payload={meetingListResponse.payload}
       />
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-10/12">
+          <div className="flex items-center gap-2 overflow-x-auto">
+            <ScheduleInstanceDatatable
+              columns={instanceColumns}
+              payload={meetingInstance}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={minutesOpen} onOpenChange={setMinutesOpen}>
+        <DialogContent className="sm:max-w-8/12">
+          <DialogHeader>
+            <DialogTitle>Meeting Minutes</DialogTitle>
+          </DialogHeader>
+
+          <div className="my-4">
+            <JoditEditor
+              value={editorContent}
+              onChange={handleEditorChange}
+              ref={editor}
+            />
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setMinutesOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (row) {
+                  addMinutesMutation.mutate({
+                    minutes: editorContent,
+                    meeting_id: row.meeting_id,
+                    meeting_instance_id: row.meeting_instance_id,
+                  });
+                }
+              }}
+              disabled={addMinutesMutation.isPending}
+            >
+              {addMinutesMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving
+                </>
+              ) : (
+                <>Save</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
