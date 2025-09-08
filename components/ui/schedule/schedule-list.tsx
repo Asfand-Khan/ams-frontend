@@ -59,6 +59,8 @@ const MeetingList = () => {
     isLoading: meetingListLoading,
     isError: meetingListIsError,
     error,
+     refetch,
+    isFetching,
   } = useQuery<MeetingResponse | null>({
     queryKey: ["meeting-list"],
     queryFn: fetchMeetingList,
@@ -415,7 +417,12 @@ const MeetingList = () => {
   if (meetingListIsError) {
     return <Error err={error?.message} />;
   }
-
+const handleRefetch = async () => {
+    const { isSuccess } = await refetch();
+    if (isSuccess) {
+      toast.success("Refetched successfully");
+    }
+  };
   // Empty state
   if (
     !meetingListResponse?.payload ||
@@ -435,6 +442,8 @@ const MeetingList = () => {
       <ScheduleDatatable
         columns={columns}
         payload={meetingListResponse.payload}
+        handleRefetch={handleRefetch}
+          isRefetching={isFetching}
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -443,6 +452,8 @@ const MeetingList = () => {
             <ScheduleInstanceDatatable
               columns={instanceColumns}
               payload={meetingInstance}
+              handleRefetch={handleRefetch}
+              isRefetching={isFetching}
             />
           </div>
         </DialogContent>

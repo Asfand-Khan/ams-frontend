@@ -6,10 +6,14 @@ import { MeetingInstancePayload } from "@/types/scheduleTypes";
 interface ScheduleDatatableProps {
   columns: ColumnDef<MeetingInstancePayload>[];
   payload: MeetingInstancePayload[];
+  isRefetching: boolean;
+  handleRefetch: () => void;
 }
 const ScheduleInstanceDatatable: React.FC<ScheduleDatatableProps> = ({
   columns,
   payload,
+   handleRefetch,
+  isRefetching,
 }) => {
   return (
     <>
@@ -17,6 +21,9 @@ const ScheduleInstanceDatatable: React.FC<ScheduleDatatableProps> = ({
         columns={columns}
         data={payload}
         title="List of all meetings instances in the system"
+         handleRefetch={handleRefetch}
+        isRefetching={isRefetching}
+        showRefetch
       />
     </>
   );
