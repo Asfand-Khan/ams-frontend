@@ -1,33 +1,27 @@
 "use client";
 
-import { getRights } from "@/utils/getRights";
+import React, { useMemo } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
-import { usePathname, useRouter } from "next/navigation";
-import React, { useMemo } from "react";
-import DatatableColumnHeader from "../datatable/datatable-column-header";
-import { ColumnMeta } from "@/types/dataTableTypes";
-import { Button } from "../shadcn/button";
-import Empty from "../foundations/empty";
-import LoadingState from "../foundations/loading-state";
-import Error from "../foundations/error";
-import SubNav from "../foundations/sub-nav";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { AxiosError } from "axios";
+import { toast } from "sonner";
+
+import { getRights } from "@/utils/getRights";
 import { fetchAttendanceCorrectionList } from "@/helperFunctions/attendanceCorrectionFunctions";
+import { axiosFunction, axiosReturnType } from "@/utils/axiosFunction";
 import {
   AttendanceCorrection,
   AttendanceCorrectionResponse,
 } from "@/types/attendanceCorrectionTypes";
-import AttendanceCorrectionDatatable from "./attendance-correction-datatable";
-import { Badge } from "../foundations/badge";
-import { axiosFunction, axiosReturnType } from "@/utils/axiosFunction";
-import { AxiosError } from "axios";
-import { toast } from "sonner";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AttendanceCorrectionApproveReject,
   attendanceCorrectionApproveRejectSchema,
 } from "@/schemas/attendanceCorrectionSchema";
+import { ColumnMeta } from "@/types/dataTableTypes";
+import { Button } from "../shadcn/button";
 import {
   Dialog,
   DialogClose,
@@ -39,28 +33,35 @@ import {
   DialogTrigger,
 } from "../shadcn/dialog";
 import { Input } from "../shadcn/input";
+import { Badge } from "../foundations/badge";
+import DatatableColumnHeader from "../datatable/datatable-column-header";
+import AttendanceCorrectionDatatable from "./attendance-correction-datatable";
+import SubNav from "../foundations/sub-nav";
+import Empty from "../foundations/empty";
+import LoadingState from "../foundations/loading-state";
+import Error from "../foundations/error";
 
-const AttendanceCorrectionList = () => {
+const AttendanceCorrectionList: React.FC = () => {
+  const ADD_URL = "/hr/attendance-corrections/add-attendance-correction";
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
 
-  // Rights
-  const rights = useMemo(() => {
-    return getRights(pathname);
-  }, [pathname]);
-
+  // Form management for approve/reject actions
   const {
     register,
     trigger,
     getValues,
     setValue,
     formState: { errors },
-  } = useForm({
+  } = useForm<AttendanceCorrectionApproveReject>({
     resolver: zodResolver(attendanceCorrectionApproveRejectSchema),
   });
 
-  // Fetch attendance correction list data using react-query
+  // Fetch user rights based on pathname
+  const rights = useMemo(() => getRights(pathname), [pathname]);
+
+  // Fetch attendance correction data
   const {
     data: attendanceCorrectionListResponse,
     isLoading: attendanceCorrectionListLoading,
@@ -73,139 +74,217 @@ const AttendanceCorrectionList = () => {
     queryFn: fetchAttendanceCorrectionList,
   });
 
-  const fullNameFilterOptions = useMemo(() => {
-    const allFullName =
+  // Memoized filter options for datatable
+  const fullNameFilterOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          attendanceCorrectionListResponse?.payload?.map(
+            (item) => item.employee.full_name
+          ) || []
+        )
+      ).map((name) => ({ label: name, value: name })),
+    [attendanceCorrectionListResponse]
+  );
+
+  const attendanceDateFilterOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          attendanceCorrectionListResponse?.payload?.map(
+            (item) => item.attendance_date.split("T")[0]
+          ) || []
+        )
+      ).map((date) => ({ label: date, value: date })),
+    [attendanceCorrectionListResponse]
+  );
+  const requestTypeFilterOptions = useMemo(() => {
+    const allRequestTypes =
       attendanceCorrectionListResponse?.payload?.map(
-        (item) => item.employee.full_name
+        (item) => item.request_type
       ) || [];
-    const uniqueData = Array.from(new Set(allFullName));
-    return uniqueData.map((item) => ({
-      label: item,
-      value: item,
+    const uniqueRequestTypes = Array.from(new Set(allRequestTypes));
+    return uniqueRequestTypes.map((type) => ({
+      label: type
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" "),
+      value: type,
     }));
   }, [attendanceCorrectionListResponse]);
 
-  const attendanceDateFilterOptions = useMemo(() => {
-    const allAttendanceDate =
-      attendanceCorrectionListResponse?.payload?.map(
-        (item) => item.attendance_date.split("T")[0]
-      ) || [];
-    const uniqueEmployeeCode = Array.from(new Set(allAttendanceDate));
-    return uniqueEmployeeCode.map((code) => ({
-      label: code,
-      value: code,
-    }));
-  }, [attendanceCorrectionListResponse]);
-
-  const createDateFilterOptions = useMemo(() => {
-    const allCreateDate =
-      attendanceCorrectionListResponse?.payload?.map(
-        (item) => item.created_at.split("T")[0]
-      ) || [];
-    const uniqueEmployeeCode = Array.from(new Set(allCreateDate));
-    return uniqueEmployeeCode.map((code) => ({
-      label: code,
-      value: code,
-    }));
-  }, [attendanceCorrectionListResponse]);
-
-  // Mutations
+  const createDateFilterOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          attendanceCorrectionListResponse?.payload?.map(
+            (item) => item.created_at.split("T")[0]
+          ) || []
+        )
+      ).map((date) => ({ label: date, value: date })),
+    [attendanceCorrectionListResponse]
+  );
+  const mergedDateFilterOptions = useMemo(() => {
+    const all = [
+      ...(attendanceDateFilterOptions || []),
+      ...(createDateFilterOptions || []),
+    ];
+    const map = new Map<string, { label: string; value: string }>();
+    all.forEach((opt) => {
+      if (opt?.value) map.set(opt.value, opt);
+    });
+    return Array.from(map.values());
+  }, [attendanceDateFilterOptions, createDateFilterOptions]);
   const attendanceCorrectionApproveRejectMutation = useMutation<
     axiosReturnType,
-    AxiosError<any>,
+    AxiosError<{ message: string }>,
     AttendanceCorrectionApproveReject
   >({
     onMutate: () => {
-      toast.info("Please wait...");
+      toast.info("Processing request...");
     },
-    mutationFn: (record) => {
-      return axiosFunction({
+    mutationFn: (record) =>
+      axiosFunction({
         method: "POST",
         urlPath: "/attendance-corrections/approve-reject",
         data: record,
         isServer: true,
-      });
-    },
+      }),
     onError: (err) => {
-      const message = err?.response?.data?.message;
-      console.log("Attendance correction mutation error", err);
-      toast.error(message);
+      toast.error(err.response?.data?.message || "An error occurred");
     },
     onSuccess: (data) => {
-      const message = data?.message;
-      toast.success(message);
+      toast.success(data.message || "Action completed successfully");
       queryClient.invalidateQueries({
         queryKey: ["attendance-correction-list"],
       });
     },
   });
 
+  const onSubmit = (data: AttendanceCorrectionApproveReject) => {
+    attendanceCorrectionApproveRejectMutation.mutate(data);
+  };
+
+  // Handle data refetch
+  const handleRefetch = async () => {
+    const { isSuccess } = await refetch();
+    if (isSuccess) {
+      toast.success("Data refreshed successfully");
+    }
+  };
+
+  // Define table columns
   const columns: ColumnDef<AttendanceCorrection>[] = [
     {
-      accessorKey: "employee.full_name",
+      accessorKey: "Name",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Name" />
       ),
-      cell: ({ row }) => {
-        const employeeName = row.original.employee.full_name;
-        return <div>{employeeName}</div>;
-      },
+      cell: ({ row }) => <div>{row.original.employee.full_name}</div>,
       filterFn: "multiSelect",
       meta: {
         filterType: "multiselect",
         filterOptions: fullNameFilterOptions,
-        filterPlaceholder: "Filter name...",
+        filterPlaceholder: "Filter by name...",
       } as ColumnMeta,
     },
     {
-      accessorKey: "attendance_date",
+      id: "dates",
+      accessorKey:"Dates",
       header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Attendance Date" />
+        <DatatableColumnHeader column={column} title="Dates" />
       ),
-      cell: ({ row }) => <div>{row.getValue("attendance_date")}</div>,
-      filterFn: "multiSelect",
+      cell: ({ row }) => {
+        const attendanceDate = row.original.attendance_date ?? "—";
+        const createdDate = row.original.created_at
+          ? row.original.created_at.split("T")[0]
+          : "—";
+
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-sm">
+              <strong>Attendance:</strong> {attendanceDate}
+            </span>
+            <span className="text-sm">
+              <strong>Created At:</strong> {createdDate}
+            </span>
+          </div>
+        );
+      },
+      filterFn: (row: any, _columnId: string, filterValue: any) => {
+        if (
+          !filterValue ||
+          (Array.isArray(filterValue) && filterValue.length === 0)
+        )
+          return true;
+
+        const selected = Array.isArray(filterValue)
+          ? filterValue
+          : [filterValue];
+
+        const attendanceDate = row.original.attendance_date
+          ? row.original.attendance_date.split("T")[0]
+          : null;
+        const createdDate = row.original.created_at
+          ? row.original.created_at.split("T")[0]
+          : null;
+
+        return selected.some(
+          (v: string) => v === attendanceDate || v === createdDate
+        );
+      },
+
       meta: {
         filterType: "multiselect",
-        filterOptions: attendanceDateFilterOptions,
-        filterPlaceholder: "Filter date...",
+        filterOptions: mergedDateFilterOptions,
+        filterPlaceholder: "Filter by dates...",
+      } as ColumnMeta,
+    },
+    {
+      accessorKey:"Original Time",
+      header: ({ column }) => (
+        <DatatableColumnHeader column={column} title="Original In/Out" />
+      ),
+      cell: ({ row }) => {
+        const checkIn = row.original.original_check_in ?? "—";
+        const checkOut = row.original.original_check_out ?? "—";
+        return (
+          <div className="flex flex-col">
+            <span>
+              <strong>In: </strong>
+              {checkIn}
+            </span>
+            <span>
+              <strong>Out: </strong>
+              {checkOut}
+            </span>
+          </div>
+        );
       },
     },
     {
-      accessorKey: "original_check_in",
+      accessorKey:"Requested Time",
       header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Original Check In" />
+        <DatatableColumnHeader column={column} title="Requested In/Out" />
       ),
-      cell: ({ row }) => (
-        <div>{row.getValue("original_check_in") ?? "---"}</div>
-      ),
+      cell: ({ row }) => {
+        const checkIn = row.original.requested_check_in ?? "—";
+        const checkOut = row.original.requested_check_out ?? "—";
+        return (
+          <div className="flex flex-col">
+            <span className="text-sm">
+              <strong>In: </strong>
+              {checkIn}
+            </span>
+            <span className="text-sm">
+              <strong>Out: </strong>
+              {checkOut}
+            </span>
+          </div>
+        );
+      },
     },
-    {
-      accessorKey: "requested_check_in",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Requested Check In" />
-      ),
-      cell: ({ row }) => (
-        <div>{row.getValue("requested_check_in") ?? "---"}</div>
-      ),
-    },
-    {
-      accessorKey: "original_check_out",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Original Check Out" />
-      ),
-      cell: ({ row }) => (
-        <div>{row.getValue("original_check_out") ?? "---"}</div>
-      ),
-    },
-    {
-      accessorKey: "requested_check_out",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Requested Check Out" />
-      ),
-      cell: ({ row }) => (
-        <div>{row.getValue("requested_check_out") ?? "---"}</div>
-      ),
-    },
+
     {
       accessorKey: "reason",
       header: ({ column }) => (
@@ -220,15 +299,15 @@ const AttendanceCorrectionList = () => {
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Reason</DialogTitle>
+              <DialogTitle>Reason for Correction</DialogTitle>
               <DialogDescription>
-                Below is the given reason for the correction.
+                The reason provided for the attendance correction request.
               </DialogDescription>
-              <hr/>
+              <hr />
             </DialogHeader>
             <div className="flex items-center gap-2">
               <div className="grid flex-1 gap-2">
-                {row.getValue("reason") ?? "---"}
+                {row.getValue("reason") ?? "—"}
               </div>
             </div>
             <DialogFooter className="sm:justify-start mt-2">
@@ -243,89 +322,105 @@ const AttendanceCorrectionList = () => {
       ),
     },
     {
-      accessorKey: "request_type",
+      accessorKey: "Request Type",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Request Type" />
       ),
-      cell: ({ row }) => <div>{row.getValue("request_type") ?? "---"}</div>,
+      cell: ({ row }) => {
+        const requestType = row.original.request_type as string | undefined;
+        const formattedType = requestType
+          ? requestType
+              .split("_")
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(" ")
+          : "—";
+        return (
+          <Badge
+            variant={
+              requestType === "missed_check_in" ||
+              requestType === "missed_check_out"
+                ? "danger"
+                : requestType === "wrong_time" || requestType === "both"
+                ? "danger"
+                : requestType === "work_from_home"
+                ? "success"
+                : "outline"
+            }
+            className="px-3 py-1 capitalize"
+          >
+            {formattedType}
+          </Badge>
+        );
+      },
+      filterFn: "multiSelect",
+      meta: {
+        filterType: "multiselect",
+        filterOptions: requestTypeFilterOptions,
+        filterPlaceholder: "Filter request type...",
+      } as ColumnMeta,
     },
+    {
+       accessorKey:"Review Info",
+      header: ({ column }) => (
+        <DatatableColumnHeader column={column} title="Review Info" />
+      ),
+      cell: ({ row }) => {
+        const reviewer = row.original.reviewer?.full_name ?? "—";
+        const remarks = row.original.remarks ?? "—";
+        const reviewDate = row.original.reviewed_on
+          ? row.original.reviewed_on.split("T")[0]
+          : "—";
+
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-sm">
+              <strong>Reviewer:</strong> {reviewer}
+            </span>
+            <span className="text-sm">
+              <strong>Date:</strong> {reviewDate}
+            </span>
+            <span className="text-sm w-[200px] whitespace-pre-wrap break-words">
+              <strong>Remarks:</strong> {remarks ?? "—"}
+            </span>
+          </div>
+        );
+      },
+    },
+
     {
       accessorKey: "status",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Status" />
       ),
       cell: ({ row }) => {
-        const status = row.getValue("status") as string;
-        return (
-          <Badge
-            variant={`${
-              status === "approved"
-                ? "success"
-                : status === "rejected"
-                ? "danger"
-                : "pending"
-            }`}
-            className="px-3 py-1 capitalize"
-          >
-            {status ?? "---"}
-          </Badge>
-        );
-      },
-    },
-    {
-      accessorKey: "reviewer.full_name",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Reviewed By" />
-      ),
-      cell: ({ row }) => {
-        const reveiwerName = row.original.reviewer?.full_name ?? "---";
-        return <div>{reveiwerName}</div>;
-      },
-    },
-    {
-      accessorKey: "reviewed_on",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Review Date" />
-      ),
-      cell: ({ row }) => {
-        const reveiwDate = row.original.reviewed_on?.split("T")[0] ?? "---";
-        return <div>{reveiwDate}</div>;
-      },
-    },
-    {
-      id: "approveReject",
-      header: "Approve/Reject",
-      cell: ({ row }) => {
         const record = row.original;
-        return (
-          <div className="flex items-center gap-2">
-            <form>
+
+        if (record.status === "pending") {
+          return (
+            <div className="flex items-center gap-2">
+              {/* Approve Dialog */}
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="default"
-                    disabled={record.status !== "pending"}
-                  >
+                  <Button size="sm" variant="default">
                     Approve
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle>Approve Remarks</DialogTitle>
+                    <DialogTitle>Approve Attendance Correction</DialogTitle>
                     <DialogDescription>
-                      Please enter the remarks for approval.
+                      Provide remarks for approving this correction request.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="flex items-center gap-2">
                     <div className="grid flex-1 gap-2">
                       <Input
                         type="text"
-                        placeholder="Enter approve remarks"
+                        placeholder="Enter approval remarks"
                         {...register("remarks")}
                       />
                       {errors.remarks && (
-                        <span className="text-destructive">
+                        <span className="text-destructive text-sm">
                           {errors.remarks.message}
                         </span>
                       )}
@@ -333,57 +428,57 @@ const AttendanceCorrectionList = () => {
                   </div>
                   <DialogFooter className="sm:justify-start">
                     <Button
-                      type="submit"
+                      type="button"
                       variant="secondary"
                       onClick={async () => {
                         setValue("attendance_correction_id", record.id);
                         setValue("status", "approved");
                         setValue("employee_id", record.employee_id);
                         const remarks = getValues("remarks");
-                        if (remarks.length === 0) {
-                          toast.error("Remarks cannot be empty");
+                        if (!remarks) {
+                          toast.error("Remarks are required");
                           return;
                         }
                         const isValid = await trigger();
                         if (isValid) {
-                          const formData = getValues();
-                          onSubmit(formData);
+                          onSubmit(getValues());
                         }
                       }}
                     >
                       Submit
                     </Button>
+                    <DialogClose asChild>
+                      <Button type="button" variant="outline">
+                        Cancel
+                      </Button>
+                    </DialogClose>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-            </form>
-            <form>
+
+              {/* Reject Dialog */}
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    disabled={record.status !== "pending"}
-                  >
+                  <Button size="sm" variant="destructive">
                     Reject
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle>Reject Remarks</DialogTitle>
+                    <DialogTitle>Reject Attendance Correction</DialogTitle>
                     <DialogDescription>
-                      Please enter the remarks for rejection.
+                      Provide remarks for rejecting this correction request.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="flex items-center gap-2">
                     <div className="grid flex-1 gap-2">
                       <Input
                         type="text"
-                        placeholder="Enter reject remarks"
+                        placeholder="Enter rejection remarks"
                         {...register("remarks")}
                       />
                       {errors.remarks && (
-                        <span className="text-destructive">
+                        <span className="text-destructive text-sm">
                           {errors.remarks.message}
                         </span>
                       )}
@@ -398,140 +493,114 @@ const AttendanceCorrectionList = () => {
                         setValue("status", "rejected");
                         setValue("employee_id", record.employee_id);
                         const remarks = getValues("remarks");
-                        if (remarks.length === 0) {
-                          toast.error("Remarks cannot be empty");
+                        if (!remarks) {
+                          toast.error("Remarks are required");
                           return;
                         }
                         const isValid = await trigger();
                         if (isValid) {
-                          const formData = getValues();
-                          onSubmit(formData);
+                          onSubmit(getValues());
                         }
                       }}
                     >
                       Submit
                     </Button>
+                    <DialogClose asChild>
+                      <Button type="button" variant="outline">
+                        Cancel
+                      </Button>
+                    </DialogClose>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-            </form>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "created_at",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Create Date" />
-      ),
-      cell: ({ row }) => {
-        const createDate = row.original.created_at?.split("T")[0] ?? "---";
-        return <div>{createDate}</div>;
+            </div>
+          );
+        }
+
+        if (record.status === "approved") {
+          return (
+            <div className="flex items-center gap-2">
+              <Badge variant="success" className="px-3 py-1 capitalize">
+                Approved
+              </Badge>
+            </div>
+          );
+        }
+
+        if (record.status === "rejected") {
+          return (
+            <div className="flex items-center gap-2">
+              <Badge variant="danger" className="px-3 py-1 capitalize">
+                Rejected
+              </Badge>
+            </div>
+          );
+        }
+        return null;
       },
       filterFn: "multiSelect",
       meta: {
         filterType: "multiselect",
-        filterOptions: createDateFilterOptions,
-        filterPlaceholder: "Filter create date...",
+        filterOptions: [
+          { label: "Pending", value: "pending" },
+          { label: "Approved", value: "approved" },
+          { label: "Rejected", value: "rejected" },
+        ],
+        filterPlaceholder: "Filter status...",
       } as ColumnMeta,
     },
-    // {
-    //   id: "actions",
-    //   header: "Actions",
-    //   cell: ({ row }) => {
-    //     const record = row.original;
-    //     return (
-    //       <DropdownMenu>
-    //         <DropdownMenuTrigger asChild>
-    //           <Button variant="ghost" className="h-8 w-8 p-0">
-    //             <span className="sr-only">Open menu</span>
-    //             <MoreHorizontal />
-    //           </Button>
-    //         </DropdownMenuTrigger>
-    //         <DropdownMenuContent align="end">
-    //           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-    //           <DropdownMenuSeparator />
-    //           {rights?.can_edit === "1" && (
-    //             <DropdownMenuItem
-    //               onClick={() => {
-    //                 console.log("Edit: ", record.id);
-    //               }}
-    //               asChild
-    //             >
-    //               <Link href={"#"}>
-    //                 <Edit className="mr-2 h-4 w-4" />
-    //                 Edit
-    //               </Link>
-    //             </DropdownMenuItem>
-    //           )}
-    //           {rights?.can_edit === "1" && (
-    //             <DropdownMenuItem>
-    //               <Trash className="mr-2 h-4 w-4" />
-    //               Delete
-    //             </DropdownMenuItem>
-    //           )}
-    //         </DropdownMenuContent>
-    //       </DropdownMenu>
-    //     );
-    //   },
-    // },
   ];
 
-  // Rights Redirection
+  // Redirect if user lacks view permissions
   if (rights?.can_view !== "1") {
-    setTimeout(() => {
-      router.back();
-    }, 1500);
+    setTimeout(() => router.back(), 1500);
     return (
       <Empty
         title="Permission Denied"
-        description="You do not have permission to view branch listing."
+        description="You do not have permission to view the attendance correction list."
       />
     );
   }
 
-  // Loading state
+  // Display loading state
   if (attendanceCorrectionListLoading) {
     return <LoadingState />;
   }
 
-  // Error state
+  // Display error state
   if (attendanceCorrectionListIsError) {
-    return <Error err={error?.message} />;
+    return (
+      <Error err={error?.message || "An error occurred while fetching data"} />
+    );
   }
 
-  // Empty state
+  // Display empty state
   if (
     !attendanceCorrectionListResponse?.payload ||
     attendanceCorrectionListResponse.payload.length === 0
   ) {
     return (
-      <Empty title="Not Found" description="No Attendance Correction Found" />
+      <Empty
+        title="No Data Found"
+        description="No attendance correction requests are available."
+      />
     );
   }
 
-  const onSubmit = (data: AttendanceCorrectionApproveReject) => {
-    console.log(data);
-    attendanceCorrectionApproveRejectMutation.mutate(data);
-  };
-
-  const handleRefetch = async () => {
-    const { isSuccess } = await refetch();
-    if (isSuccess) {
-      toast.success("Refetched successfully");
-    }
-  };
-
   return (
-    <>
-      <SubNav title="Attendance Correction List" />
+    <div className="space-y-4">
+      <SubNav
+        title="Attendance Correction List"
+        urlPath={ADD_URL}
+        addBtnTitle="Add Correction"
+      />
       <AttendanceCorrectionDatatable
         columns={columns}
         payload={attendanceCorrectionListResponse.payload}
         handleRefetch={handleRefetch}
         isRefetching={isFetching}
       />
-    </>
+    </div>
   );
 };
 
