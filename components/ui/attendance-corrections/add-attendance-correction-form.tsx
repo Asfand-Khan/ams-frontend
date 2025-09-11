@@ -59,7 +59,6 @@ const AddAttendanceCorrectionForm: React.FC<
     formState: { errors },
     reset,
     control,
-    setValue,
   } = useForm<AttendanceCorrectionCreateSchemaType>({
     resolver: zodResolver(attendanceCorrectionCreateSchema),
     defaultValues: {
