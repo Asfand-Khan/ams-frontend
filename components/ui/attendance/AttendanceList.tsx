@@ -77,17 +77,6 @@ const AttendanceList = () => {
       value: item,
     }));
   }, [attendanceListResponse]);
-
-  const employeeCodeFilterOptions = useMemo(() => {
-    const allEmployeeCode =
-      attendanceListResponse?.payload?.map((item) => item.employee_code) || [];
-    const uniqueEmployeeCode = Array.from(new Set(allEmployeeCode));
-    return uniqueEmployeeCode.map((code) => ({
-      label: code,
-      value: code,
-    }));
-  }, [attendanceListResponse]);
-
   const columns: ColumnDef<AttendanceRecord>[] = [
     {
       accessorKey: "full_name",
