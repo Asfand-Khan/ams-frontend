@@ -35,7 +35,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../shadcn/dialog";
-import { Input } from "../shadcn/input";
+
 
 const LeaveList = () => {
   const router = useRouter();
@@ -48,11 +48,8 @@ const LeaveList = () => {
   }, [pathname]);
 
   const {
-    register,
-    trigger,
     getValues,
     setValue,
-    formState: { errors },
   } = useForm({
     resolver: zodResolver(leaveRequestApproveRejectSchema),
   });
@@ -74,6 +71,15 @@ const LeaveList = () => {
     const allFullName =
       leaveListResponse?.payload?.map((item) => item.full_name) || [];
     const uniqueData = Array.from(new Set(allFullName));
+    return uniqueData.map((item) => ({
+      label: item,
+      value: item,
+    }));
+  }, [leaveListResponse]);
+  const leaveTypeFilterOptions = useMemo(() => {
+    const allLeaveTypes =
+      leaveListResponse?.payload?.map((item) => item.leave_type_name) || [];
+    const uniqueData = Array.from(new Set(allLeaveTypes));
     return uniqueData.map((item) => ({
       label: item,
       value: item,
@@ -126,10 +132,7 @@ const LeaveList = () => {
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Name" />
       ),
-      cell: ({ row }) => {
-        const employeeName = row.original.full_name;
-        return <div>{employeeName}</div>;
-      },
+      cell: ({ row }) => <div>{row.original.full_name}</div>,
       filterFn: "multiSelect",
       meta: {
         filterType: "multiselect",
@@ -138,53 +141,137 @@ const LeaveList = () => {
       } as ColumnMeta,
     },
     {
-      accessorKey: "start_date",
+      id: "leave Dates",
       header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Start Date" />
+        <DatatableColumnHeader column={column} title="Leave Period" />
       ),
-      cell: ({ row }) => <div>{row.getValue("start_date")}</div>,
+      cell: ({ row }) => {
+        const start = row.original.start_date ?? "---";
+        const end = row.original.end_date ?? "---";
+        const total = row.original.total_days ?? "---";
+        return (
+          <div className="flex flex-col gap-1 text-sm">
+            <span>
+              <strong>Start:</strong> {start}
+            </span>
+            <span>
+              <strong>End:</strong> {end}
+            </span>
+            <span>
+              <strong>Total Days:</strong> {total}
+            </span>
+          </div>
+        );
+      },
     },
     {
-      accessorKey: "end_date",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="End Date" />
-      ),
-      cell: ({ row }) => <div>{row.getValue("end_date")}</div>,
-    },
-    {
-      accessorKey: "leave_type_name",
+      accessorKey: "leave Type",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Type" />
       ),
-      cell: ({ row }) => <div>{row.getValue("leave_type_name") ?? "---"}</div>,
+      cell: ({ row }) => <div>{row.original.leave_type_name ?? "---"}</div>,
+      filterFn: "multiSelect",
+      meta: {
+        filterType: "multiselect",
+        filterOptions: leaveTypeFilterOptions,
+        filterPlaceholder: "Filter leave type...",
+      } as ColumnMeta,
     },
+
     {
-      accessorKey: "total_days",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Total Days" />
-      ),
-      cell: ({ row }) => <div>{row.getValue("total_days") ?? "---"}</div>,
-    },
-    {
-      accessorKey: "status",
+      accessorKey: "Status",
+      accessorFn: (row) => row.STATUS,
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Status" />
       ),
       cell: ({ row }) => {
-        const status = row.original.STATUS as string;
+        const record = row.original;
+        const status = record.STATUS;
+
+        const getVariant = (s: string | null) => {
+          switch (s) {
+            case "approved":
+              return "success";
+            case "rejected":
+              return "danger";
+            case "pending":
+              return "pending";
+            default:
+              return "outline";
+          }
+        };
+
         return (
-          <Badge
-            variant={`${
-              status === "approved"
-                ? "success"
-                : status === "rejected"
-                ? "danger"
-                : "pending"
-            }`}
-            className="px-3 py-1 capitalize"
-          >
-            {status ?? "---"}
-          </Badge>
+          <div className="flex flex-col gap-2">
+            <Badge
+              variant={getVariant(status)}
+              className="px-3 py-1 capitalize w-fit"
+            >
+              {status ?? "---"}
+            </Badge>
+
+            {status === "pending" && (
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={() => {
+                    setValue("leave_id", record.leave_id);
+                    setValue("leave_type_id", record.leave_type_id);
+                    setValue("status", "approved");
+                    setValue("employee_id", record.employee_id);
+                    onSubmit(getValues());
+                  }}
+                >
+                  Approve
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => {
+                    setValue("leave_id", record.leave_id);
+                    setValue("leave_type_id", record.leave_type_id);
+                    setValue("status", "rejected");
+                    setValue("employee_id", record.employee_id);
+                    onSubmit(getValues());
+                  }}
+                >
+                  Reject
+                </Button>
+              </div>
+            )}
+          </div>
+        );
+      },
+      filterFn: "multiSelect",
+      meta: {
+        filterType: "multiselect",
+        filterOptions: [
+          { label: "Pending", value: "pending" },
+          { label: "Approved", value: "approved" },
+          { label: "Rejected", value: "rejected" },
+        ],
+        filterPlaceholder: "Filter status...",
+      } as ColumnMeta,
+    },
+
+    {
+      id: "approval Details",
+      header: ({ column }) => (
+        <DatatableColumnHeader column={column} title="Approval Info" />
+      ),
+      cell: ({ row }) => {
+        const approver = row.original.approver ?? "---";
+        const approveDate = row.original.applied_on?.split("T")[0] ?? "---";
+        return (
+          <div className="flex flex-col gap-1 text-sm">
+            <span>
+              <strong>By:</strong> {approver}
+            </span>
+            <span>
+              <strong>On:</strong> {approveDate}
+            </span>
+          </div>
         );
       },
     },
@@ -204,7 +291,7 @@ const LeaveList = () => {
             <DialogHeader>
               <DialogTitle>Reason</DialogTitle>
               <DialogDescription>
-                Below is the given reason for the correction.
+                Below is the given reason for the leave request.
               </DialogDescription>
               <hr />
             </DialogHeader>
@@ -225,158 +312,9 @@ const LeaveList = () => {
       ),
     },
     {
-      accessorKey: "approver",
+      accessorKey: "Created At",
       header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Approved By" />
-      ),
-      cell: ({ row }) => {
-        const approver = row.original.approver ?? "---";
-        return <div>{approver}</div>;
-      },
-    },
-    {
-      accessorKey: "applied_on",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Approved On" />
-      ),
-      cell: ({ row }) => {
-        const approveDate = row.original.applied_on?.split("T")[0] ?? "---";
-        return <div>{approveDate}</div>;
-      },
-    },
-    {
-      id: "approveReject",
-      header: "Approve/Reject",
-      cell: ({ row }) => {
-        const record = row.original;
-        return (
-          <div className="flex items-center gap-2">
-            <form>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="default"
-                    disabled={record.STATUS !== "pending"}
-                  >
-                    Approve
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Approve Remarks</DialogTitle>
-                    <DialogDescription>
-                      Please enter the remarks for approval.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="flex items-center gap-2">
-                    <div className="grid flex-1 gap-2">
-                      <Input
-                        type="text"
-                        placeholder="Enter approve remarks"
-                        {...register("remarks")}
-                      />
-                      {errors.remarks && (
-                        <span className="text-destructive">
-                          {errors.remarks.message}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <DialogFooter className="sm:justify-start">
-                    <Button
-                      type="submit"
-                      variant="secondary"
-                      onClick={async () => {
-                        setValue("leave_id", record.leave_id);
-                        setValue("leave_type_id", record.leave_type_id);
-                        setValue("status", "approved");
-                        setValue("employee_id", record.employee_id);
-                        const remarks = getValues("remarks");
-                        if (remarks.length === 0) {
-                          toast.error("Remarks cannot be empty");
-                          return;
-                        }
-                        const isValid = await trigger();
-                        if (isValid) {
-                          const formData = getValues();
-                          onSubmit(formData);
-                        }
-                      }}
-                    >
-                      Submit
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </form>
-            <form>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    disabled={record.STATUS !== "pending"}
-                  >
-                    Reject
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Reject Remarks</DialogTitle>
-                    <DialogDescription>
-                      Please enter the remarks for rejection.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="flex items-center gap-2">
-                    <div className="grid flex-1 gap-2">
-                      <Input
-                        type="text"
-                        placeholder="Enter approve remarks"
-                        {...register("remarks")}
-                      />
-                      {errors.remarks && (
-                        <span className="text-destructive">
-                          {errors.remarks.message}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <DialogFooter className="sm:justify-start">
-                    <Button
-                      type="submit"
-                      variant="secondary"
-                      onClick={async () => {
-                        setValue("leave_id", record.leave_id);
-                        setValue("leave_type_id", record.leave_type_id);
-                        setValue("status", "rejected");
-                        setValue("employee_id", record.employee_id);
-                        const remarks = getValues("remarks");
-                        if (remarks.length === 0) {
-                          toast.error("Remarks cannot be empty");
-                          return;
-                        }
-                        const isValid = await trigger();
-                        if (isValid) {
-                          const formData = getValues();
-                          onSubmit(formData);
-                        }
-                      }}
-                    >
-                      Submit
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </form>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "created_at",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Create Date" />
+        <DatatableColumnHeader column={column} title="Created Date" />
       ),
       cell: ({ row }) => {
         const createDate = row.original.created_at?.split("T")[0] ?? "---";
@@ -389,46 +327,6 @@ const LeaveList = () => {
         filterPlaceholder: "Filter create date...",
       } as ColumnMeta,
     },
-    // {
-    //   id: "actions",
-    //   header: "Actions",
-    //   cell: ({ row }) => {
-    //     const record = row.original;
-    //     return (
-    //       <DropdownMenu>
-    //         <DropdownMenuTrigger asChild>
-    //           <Button variant="ghost" className="h-8 w-8 p-0">
-    //             <span className="sr-only">Open menu</span>
-    //             <MoreHorizontal />
-    //           </Button>
-    //         </DropdownMenuTrigger>
-    //         <DropdownMenuContent align="end">
-    //           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-    //           <DropdownMenuSeparator />
-    //           {rights?.can_edit === "1" && (
-    //             <DropdownMenuItem
-    //               onClick={() => {
-    //                 console.log("Edit: ", record.leave_id);
-    //               }}
-    //               asChild
-    //             >
-    //               <Link href={"#"}>
-    //                 <Edit className="mr-2 h-4 w-4" />
-    //                 Edit
-    //               </Link>
-    //             </DropdownMenuItem>
-    //           )}
-    //           {rights?.can_edit === "1" && (
-    //             <DropdownMenuItem>
-    //               <Trash className="mr-2 h-4 w-4" />
-    //               Delete
-    //             </DropdownMenuItem>
-    //           )}
-    //         </DropdownMenuContent>
-    //       </DropdownMenu>
-    //     );
-    //   },
-    // },
   ];
 
   // Rights Redirection
