@@ -16,6 +16,17 @@ import { HolidayPayload, HolidayResponse } from "@/types/holidayTypes";
 import { fetchHolidayList } from "@/helperFunctions/holidayFunction";
 import HolidayDatatable from "./holiday-datatable";
 import { toast } from "sonner";
+import { Button } from "../shadcn/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../shadcn/dialog";
 
 const HolidayList = () => {
   const ADD_URL = "/hr/holidays/add-holiday";
@@ -89,13 +100,42 @@ const HolidayList = () => {
         filterPlaceholder: "Filter date...",
       } as ColumnMeta,
     },
-    {
-      accessorKey: "description",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Desc" />
-      ),
-      cell: ({ row }) => <div>{row.getValue("description") ?? "---"}</div>,
-    },
+   {
+    accessorKey: "description",
+    header: ({ column }) => (
+      <DatatableColumnHeader column={column} title="Description" />
+    ),
+    cell: ({ row }) => (
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button size="sm" variant="link">
+            View
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Description</DialogTitle>
+            <DialogDescription>
+              Below is the description for the holiday.
+            </DialogDescription>
+            <hr />
+          </DialogHeader>
+          <div className="flex items-center gap-2">
+            <div className="grid flex-1 gap-2">
+              {row.getValue("description") ?? "—"}
+            </div>
+          </div>
+          <DialogFooter className="sm:justify-start mt-2">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Close
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    ),
+  },
     {
       accessorKey: "is_active",
       header: ({ column }) => (

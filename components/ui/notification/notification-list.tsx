@@ -31,6 +31,12 @@ import {
 } from "../shadcn/dialog";
 import { Button } from "../shadcn/button";
 
+// Helper function to capitalize the first letter
+const capitalizeFirstLetter = (str: string | undefined | null): string => {
+  if (!str) return "---";
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
 const NotificationList = () => {
   // Constants
   const ADD_URL = "/hr/notifications/add-notification";
@@ -78,6 +84,22 @@ const NotificationList = () => {
 
   const columns: ColumnDef<NotificationPayload>[] = [
     {
+      accessorKey: "user.username",
+      header: ({ column }) => (
+        <DatatableColumnHeader column={column} title="Name" />
+      ),
+      cell: ({ row }) => {
+        const name = row.original.user?.username;
+        return <div>{capitalizeFirstLetter(name)}</div>;
+      },
+      filterFn: "multiSelect",
+      meta: {
+        filterType: "multiselect",
+        filterOptions: nameFilterOptions,
+        filterPlaceholder: "Filter name...",
+      } as ColumnMeta,
+    },
+    {
       accessorKey: "title",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Title" />
@@ -89,7 +111,9 @@ const NotificationList = () => {
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Priority" />
       ),
-      cell: ({ row }) => <div>{String(row.getValue("priority"))}</div>,
+      cell: ({ row }) => (
+        <div>{capitalizeFirstLetter(String(row.getValue("priority")))}</div>
+      ),
     },
     {
       accessorKey: "message",
@@ -130,23 +154,9 @@ const NotificationList = () => {
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Type" />
       ),
-      cell: ({ row }) => <div>{row.getValue("type") ?? "---"}</div>,
-    },
-    {
-      accessorKey: "user.username",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Name" />
+      cell: ({ row }) => (
+        <div>{capitalizeFirstLetter(row.getValue("type"))}</div>
       ),
-      cell: ({ row }) => {
-        const name = row.original.user?.username ?? "---";
-        return <div>{name}</div>;
-      },
-      filterFn: "multiSelect",
-      meta: {
-        filterType: "multiselect",
-        filterOptions: nameFilterOptions,
-        filterPlaceholder: "Filter name...",
-      } as ColumnMeta,
     },
     {
       accessorKey: "is_active",

@@ -32,10 +32,23 @@ import { toast } from "sonner";
 import ScheduleInstanceDatatable from "./schedule-instance-datatable";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
-
-// Dynamic import of wrapper instead of direct library
+import { format, parse } from "date-fns";
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
+const capitalizeFirstLetter = (str: string | undefined | null): string => {
+  if (!str) return "---";
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
 
+const formatTo12Hour = (time: string | undefined | null): string => {
+  if (!time) return "---";
+  try {
+    // Parse time string (e.g., "11:00:00" or "HH:mm:ss")
+    const date = parse(time, "HH:mm:ss", new Date());
+    return format(date, "h:mm a"); // e.g., "11:00 AM"
+  } catch {
+    return "---";
+  }
+};
 const MeetingList = () => {
   const ADD_URL = "/hr/schedule/add-schedule";
   const router = useRouter();
@@ -59,7 +72,7 @@ const MeetingList = () => {
     isLoading: meetingListLoading,
     isError: meetingListIsError,
     error,
-     refetch,
+    refetch,
     isFetching,
   } = useQuery<MeetingResponse | null>({
     queryKey: ["meeting-list"],
@@ -161,7 +174,7 @@ const MeetingList = () => {
       },
     },
     {
-      accessorKey: "instance_date",
+      accessorKey: "instance date",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Instance Date" />
       ),
@@ -171,67 +184,52 @@ const MeetingList = () => {
       },
     },
     {
-      accessorKey: "recurrence_rule",
+      accessorKey: "location info",
       header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Day" />
+        <DatatableColumnHeader column={column} title="Location Info" />
       ),
       cell: ({ row }) => {
-        const title = row.original.recurrence_rule;
-        return <div>{title}</div>;
+        const day = row.original.recurrence_rule;
+        const locationType = row.original.location_type;
+        const locationDetails = row.original.location_details;
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-sm">
+              <strong>Day: </strong> {capitalizeFirstLetter(day)}
+            </span>
+            <span className="text-sm">
+              <strong>Location Type: </strong>{" "}
+              {capitalizeFirstLetter(locationType)}
+            </span>
+            <span className="text-sm">
+              <strong>Location Details: </strong> {locationDetails ?? "---"}
+            </span>
+          </div>
+        );
       },
     },
     {
-      accessorKey: "location_type",
+      accessorKey: "time info",
       header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Location Type" />
+        <DatatableColumnHeader column={column} title="Time" />
       ),
       cell: ({ row }) => {
-        const title = row.original.location_type;
-        return <div>{title}</div>;
+        const startTime = row.original.start_time;
+        const endTime = row.original.end_time;
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-sm">
+              <strong>Start: </strong> {formatTo12Hour(startTime)}
+            </span>
+            <span className="text-sm">
+              <strong>End: </strong> {formatTo12Hour(endTime)}
+            </span>
+          </div>
+        );
       },
     },
     {
-      accessorKey: "location_details",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Location Details" />
-      ),
-      cell: ({ row }) => {
-        const title = row.original.location_details;
-        return <div>{title}</div>;
-      },
-    },
-    {
-      accessorKey: "start_time",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Start Time" />
-      ),
-      cell: ({ row }) => {
-        const title = row.original.start_time;
-        return <div>{title}</div>;
-      },
-    },
-    {
-      accessorKey: "end_time",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="End Time" />
-      ),
-      cell: ({ row }) => {
-        const title = row.original.end_time;
-        return <div>{title}</div>;
-      },
-    },
-    {
-      accessorKey: "agenda",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Agenda" />
-      ),
-      cell: ({ row }) => {
-        const title = row.original.agenda;
-        return <div>{title}</div>;
-      },
-    },
-    {
-      accessorKey: "id",
+      accessorKey: "Minutes",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Minutes" />
       ),
@@ -257,14 +255,21 @@ const MeetingList = () => {
         <DatatableColumnHeader column={column} title="Attendees" />
       ),
       cell: ({ row }) => {
-        const title = row.original.attendees;
-        return <div>{title}</div>;
+        const attendees = row.original.attendees;
+        if (!attendees) return <div>---</div>;
+        // Split attendees by comma and join with <br /> for line breaks
+        const formattedAttendees = attendees
+          .split(",")
+          .map((attendee) => attendee.trim())
+          .filter((attendee) => attendee)
+          .join("<br />");
+        return <div dangerouslySetInnerHTML={{ __html: formattedAttendees }} />;
       },
     },
     {
       accessorKey: "is_active",
       header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Active/Inactive" />
+        <DatatableColumnHeader column={column} title="Status" />
       ),
       cell: ({ row }) => {
         const is_active = row.getValue("is_active");
@@ -309,28 +314,34 @@ const MeetingList = () => {
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Recurrence Rule" />
       ),
-      cell: ({ row }) => <div>{row.getValue("recurrence_rule") ?? "---"}</div>,
+      cell: ({ row }) => (
+        <div>{capitalizeFirstLetter(row.getValue("recurrence_rule"))}</div>
+      ),
     },
     {
       accessorKey: "recurrence_type",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Recurrence Type" />
       ),
-      cell: ({ row }) => <div>{row.getValue("recurrence_type") ?? "---"}</div>,
+      cell: ({ row }) => (
+        <div>{capitalizeFirstLetter(row.getValue("recurrence_type"))}</div>
+      ),
     },
     {
       accessorKey: "start_time",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Start Time" />
       ),
-      cell: ({ row }) => <div>{row.getValue("start_time") ?? "---"}</div>,
+      cell: ({ row }) => (
+        <div>{formatTo12Hour(row.getValue("start_time"))}</div>
+      ),
     },
     {
       accessorKey: "end_time",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="End Time" />
       ),
-      cell: ({ row }) => <div>{row.getValue("end_time") ?? "---"}</div>,
+      cell: ({ row }) => <div>{formatTo12Hour(row.getValue("end_time"))}</div>,
     },
     {
       accessorKey: "id",
@@ -362,33 +373,6 @@ const MeetingList = () => {
         return <div>{host}</div>;
       },
     },
-    {
-      accessorKey: "is_active",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Active/Inactive" />
-      ),
-      cell: ({ row }) => {
-        const status = row.original.is_active ? "active" : "inactive";
-        return (
-          <Badge
-            variant={`${status === "active" ? "success" : "danger"}`}
-            className="px-3 py-1 capitalize"
-          >
-            {status ?? "---"}
-          </Badge>
-        );
-      },
-    },
-    {
-      accessorKey: "created_at",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Create Date" />
-      ),
-      cell: ({ row }) => {
-        const createDate = row.original.created_at?.split("T")[0] ?? "---";
-        return <div>{createDate}</div>;
-      },
-    },
   ];
 
   const handleEditorChange = (value: string) => {
@@ -417,7 +401,7 @@ const MeetingList = () => {
   if (meetingListIsError) {
     return <Error err={error?.message} />;
   }
-const handleRefetch = async () => {
+  const handleRefetch = async () => {
     const { isSuccess } = await refetch();
     if (isSuccess) {
       toast.success("Refetched successfully");
@@ -443,7 +427,7 @@ const handleRefetch = async () => {
         columns={columns}
         payload={meetingListResponse.payload}
         handleRefetch={handleRefetch}
-          isRefetching={isFetching}
+        isRefetching={isFetching}
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -460,7 +444,7 @@ const handleRefetch = async () => {
       </Dialog>
 
       <Dialog open={minutesOpen} onOpenChange={setMinutesOpen}>
-        <DialogContent className="sm:max-w-8/12">
+        <DialogContent className="w-[95%] sm:max-w-[80%] md:max-w-[70%] lg:max-w-[60%] xl:max-w-[50%] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Meeting Minutes</DialogTitle>
           </DialogHeader>
@@ -473,7 +457,7 @@ const handleRefetch = async () => {
             />
           </div>
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setMinutesOpen(false)}>
               Cancel
             </Button>

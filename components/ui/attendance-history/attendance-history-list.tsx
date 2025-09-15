@@ -133,18 +133,20 @@ const AttendanceHistoryList = () => {
 
   const columns: ColumnDef<AttendanceRecord>[] = [
     {
-      accessorKey: "full_name",
+      accessorKey: "employee_info",
       header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Name" />
+        <DatatableColumnHeader column={column} title="Employee Info" />
       ),
-      cell: ({ row }) => <div>{row.getValue("full_name")}</div>,
-    },
-    {
-      accessorKey: "employee_code",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Employee Code" />
+      cell: ({ row }) => (
+        <div className="flex flex-col gap-1">
+          <span className="text-sm">
+            <strong>Name: </strong> {row.original.full_name ?? "---"}
+          </span>
+          <span className="text-sm">
+            <strong>Code: </strong> {row.original.employee_code ?? "---"}
+          </span>
+        </div>
       ),
-      cell: ({ row }) => <div>{row.getValue("employee_code")}</div>,
     },
     {
       accessorKey: "date",
@@ -156,92 +158,111 @@ const AttendanceHistoryList = () => {
       ),
     },
     {
-      accessorKey: "check_in_time",
+      accessorKey: "check_in",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Check In" />
       ),
-      cell: ({ row }) => <div>{row.getValue("check_in_time") ?? "---"}</div>,
-    },
-    {
-      accessorKey: "check_in_status",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Check In Status" />
-      ),
       cell: ({ row }) => {
-        const status = row.original.check_in_status?.split("_").join(" ");
+        const time = row.original.check_in_time ?? "---";
+        const statusRaw = row.original.check_in_status;
+        const status = statusRaw ? statusRaw.split("_").join(" ") : null;
+
         return (
-          <>
-            {status !== undefined ? (
-              <Badge variant="outline" className="px-3 py-1 capitalize">
-                {status}
-              </Badge>
-            ) : (
-              "---"
-            )}
-          </>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm">
+              <strong>Time: </strong> {time}
+            </span>
+            <span className="text-sm">
+              <strong>Status: </strong>
+              {status ? (
+                <Badge variant="outline" className="px-3 py-1 capitalize w-fit">
+                  {status}
+                </Badge>
+              ) : (
+                <span className="text-muted-foreground">---</span>
+              )}
+            </span>
+          </div>
         );
       },
     },
     {
-      accessorKey: "check_out_time",
+      accessorKey: "check_out",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Check Out" />
       ),
-      cell: ({ row }) => <div>{row.getValue("check_out_time") ?? "---"}</div>,
-    },
-    {
-      accessorKey: "check_out_status",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Check Out Status" />
-      ),
       cell: ({ row }) => {
-        const status = row.original.check_out_status?.split("_").join(" ");
+        const time = row.original.check_out_time ?? "---";
+        const statusRaw = row.original.check_out_status;
+        const status = statusRaw ? statusRaw.split("_").join(" ") : null;
+
         return (
-          <>
-            {status !== undefined ? (
-              <Badge variant="outline" className="px-3 py-1 capitalize">
-                {status}
-              </Badge>
-            ) : (
-              "---"
-            )}
-          </>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm">
+              <strong>Time: </strong> {time}
+            </span>
+            <span className="text-sm">
+              <strong>Status: </strong>
+              {status ? (
+                <Badge variant="outline" className="px-3 py-1 capitalize w-fit">
+                  {status}
+                </Badge>
+              ) : (
+                <span className="text-muted-foreground">---</span>
+              )}
+            </span>
+          </div>
         );
       },
     },
     {
-      accessorKey: "work_hours",
+      accessorKey: "work_day",
       header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Working Hours" />
-      ),
-      cell: ({ row }) => <div>{row.getValue("work_hours") ?? "---"}</div>,
-    },
-    {
-      accessorKey: "day_status",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Day Status" />
+        <DatatableColumnHeader column={column} title="Hours / Status" />
       ),
       cell: ({ row }) => {
-        const status = row.original.day_status?.split("_").join(" ");
+        const workHours = row.original.work_hours ?? "---";
+        const statusRaw = row.original.day_status;
+        const status = statusRaw ? statusRaw.split("_").join(" ") : null;
+
+        const getVariant = (s: string | null) => {
+          switch (s) {
+            case "present":
+              return "success";
+            case "absent":
+              return "danger";
+            case "leave":
+              return "outline";
+            case "weekend":
+              return "secondary";
+            case "holiday":
+              return "secondary";
+            case "work from home":
+              return "success";
+            default:
+              return "outline";
+          }
+        };
+
         return (
-          <>
-            {status !== undefined ? (
-              <Badge
-                variant={
-                  status === "present"
-                    ? "success"
-                    : status === "absent"
-                    ? "danger"
-                    : "outline"
-                }
-                className="px-3 py-1 capitalize"
-              >
-                {status}
-              </Badge>
-            ) : (
-              "---"
-            )}
-          </>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm">
+              <strong>Hours: </strong> {workHours}
+            </span>
+            <span className="text-sm">
+              <strong>Day Status: </strong>
+              {status ? (
+                <Badge
+                  variant={getVariant(status)}
+                  className="px-3 py-1 capitalize w-fit"
+                >
+                  {status}
+                </Badge>
+              ) : (
+                <span className="text-muted-foreground">---</span>
+              )}
+            </span>
+          </div>
         );
       },
     },
