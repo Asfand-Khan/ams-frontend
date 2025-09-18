@@ -1,15 +1,18 @@
 import z from "zod";
-// Regular expressions for validation
-export const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-export const timeRegex = /^\d{2}:\d{2}:\d{2}$/;
+const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+const timeRegex = /^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/;
 
-// Utility to validate past or today dates
-export const isValidPastOrTodayDate = (date: string) => {
+const isValidPastOrTodayDate = (dateStr: string): boolean => {
+  const inputDate = new Date(dateStr);
   const today = new Date();
+
+  // Set both dates to start of day (ignore time for pure date comparison)
+  inputDate.setHours(0, 0, 0, 0);
   today.setHours(0, 0, 0, 0);
-  const inputDate = new Date(date);
+
   return inputDate <= today;
 };
+
 export const attendanceCorrectionApproveRejectSchema = z.object({
   attendance_correction_id: z
     .number({ required_error: "Attendance correction ID is required" })
