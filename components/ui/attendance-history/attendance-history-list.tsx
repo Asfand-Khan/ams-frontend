@@ -24,7 +24,7 @@ import Error from "../foundations/error";
 import { selectStyles } from "@/utils/selectStyles";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "../shadcn/popover";
-import { format } from "date-fns";
+import { format, isAfter, startOfMonth, subDays } from "date-fns";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { Calendar } from "../shadcn/calendar";
 import {
@@ -32,9 +32,11 @@ import {
   AttendanceSummaryPayload,
 } from "@/types/attendanceTypes";
 import { ColumnDef } from "@tanstack/react-table";
+import { ColumnMeta } from "@/types/dataTableTypes";
 import DatatableColumnHeader from "../datatable/datatable-column-header";
 import AttendanceHistoryDatatable from "./attendancehistory-datatable";
 import { Badge } from "../foundations/badge";
+import { DateRangePicker } from "@/lib/date-picker";
 
 const AttendanceHistoryList = () => {
   const router = useRouter();
@@ -59,15 +61,23 @@ const AttendanceHistoryList = () => {
     queryKey: ["history-employee-list"],
     queryFn: fetchEmployeeList,
   });
-
-  // Form
   const {
     handleSubmit,
     control,
+    setValue,
+    watch,
     formState: { errors },
-  } = useForm({
+  } = useForm<AttendanceHistoryType>({
     resolver: zodResolver(AttendanceHistorySchema),
+    defaultValues: {
+      dateRange: {
+        from: startOfMonth(new Date()),
+        to: new Date(),
+      },
+    },
   });
+
+  const dateRange = watch("dateRange");
 
   const fetchAttendanceHistoryMutation = useMutation<
     axiosReturnType,
@@ -80,8 +90,12 @@ const AttendanceHistoryList = () => {
         urlPath: "/attendances",
         data: {
           ...record,
-          start_date: format(record.start_date, "yyyy-MM-dd"),
-          end_date: format(record.end_date, "yyyy-MM-dd"),
+          start_date: record.dateRange?.from
+            ? format(record.dateRange.from, "yyyy-MM-dd")
+            : "",
+          end_date: record.dateRange?.to
+            ? format(record.dateRange.to, "yyyy-MM-dd")
+            : "",
         },
         isServer: true,
       });
@@ -109,8 +123,12 @@ const AttendanceHistoryList = () => {
         urlPath: "/attendances/summary",
         data: {
           ...record,
-          start_date: format(record.start_date, "yyyy-MM-dd"),
-          end_date: format(record.end_date, "yyyy-MM-dd"),
+          start_date: record.dateRange?.from
+            ? format(record.dateRange.from, "yyyy-MM-dd")
+            : "",
+          end_date: record.dateRange?.to
+            ? format(record.dateRange.to, "yyyy-MM-dd")
+            : "",
         },
         isServer: true,
         apiVersion: true,
@@ -130,10 +148,103 @@ const AttendanceHistoryList = () => {
     fetchAttendanceSummaryMutation.mutate(data);
     fetchAttendanceHistoryMutation.mutate(data);
   };
+  /* --------------------------- FILTER OPTIONS --------------------------- */
+  const dateFilterOptions = useMemo(() => {
+    const dates = attendanceHistoryData.map((r) => r.date.split("T")[0]);
+    return Array.from(new Set(dates)).map((d) => ({ label: d, value: d }));
+  }, [attendanceHistoryData]);
+  const dayStatusFilterOptions = useMemo(() => {
+    const statuses = attendanceHistoryData
+      .map((r) => r.day_status)
+      .filter(Boolean);
+    return Array.from(new Set(statuses)).map((s) => ({
+      label: s!
+        .split("_")
+        .map((w) => w[0].toUpperCase() + w.slice(1))
+        .join(" "),
+      value: s!,
+    }));
+  }, [attendanceHistoryData]);
+  const checkInStatusFilterOptions = useMemo(() => {
+    const statuses = attendanceHistoryData
+      .map((r) => r.check_in_status)
+      .filter(Boolean);
+    return Array.from(new Set(statuses)).map((s) => ({
+      label: s!
+        .split("_")
+        .map((w) => w[0].toUpperCase() + w.slice(1))
+        .join(" "),
+      value: s!,
+    }));
+  }, [attendanceHistoryData]);
+  const checkOutStatusFilterOptions = useMemo(() => {
+    const statuses = attendanceHistoryData
+      .map((r) => r.check_out_status)
+      .filter(Boolean);
+    return Array.from(new Set(statuses)).map((s) => ({
+      label: s!
+        .split("_")
+        .map((w) => w[0].toUpperCase() + w.slice(1))
+        .join(" "),
+      value: s!,
+    }));
+  }, [attendanceHistoryData]);
 
+  const getCheckInVariant = (status: string | null) => {
+  switch (status) {
+    case "on time":
+      return "success";
+    case "late":
+      return "warning";
+    case "absent":
+      return "danger";
+    case "manual":
+      return "neutral";
+    default:
+      return "outline";
+  }
+};
+
+const getCheckOutVariant = (status: string | null) => {
+  switch (status) {
+    case "on time":
+      return "success";
+    case "early leave":
+    case "early go":
+      return "warning";
+    case "overtime":
+      return "info";
+    case "manual":
+      return "neutral";
+    case "half day":
+      return "pending";
+    default:
+      return "outline";
+  }
+};
+
+const getDayStatusVariant = (status: string | null) => {
+  switch (status) {
+    case "present":
+      return "success";
+    case "absent":
+      return "danger";
+    case "leave":
+      return "warning";
+    case "weekend":
+    case "holiday":
+      return "secondary";
+    case "work from home":
+      return "info";
+    default:
+      return "neutral";
+  }
+};
+
+  /* ----------------------------- COLUMNS ----------------------------- */
   const columns: ColumnDef<AttendanceRecord>[] = [
     {
-      accessorKey: "employee_info",
+      accessorKey: "employee_id",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Employee Info" />
       ),
@@ -153,12 +264,45 @@ const AttendanceHistoryList = () => {
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Attendance Date" />
       ),
-      cell: ({ row }) => (
-        <div>{String(row.getValue("date")).split("T")[0]}</div>
-      ),
+      cell: ({ row }) => {
+        const iso = row.getValue("date") as string;
+        const dateObj = new Date(iso);
+        const dayName = format(dateObj, "EEEE");
+        const dateStr = iso.split("T")[0];
+        return (
+          <div className="flex flex-col">
+            <span className="text-sm">
+              <strong>Day: </strong>
+              {dayName}
+            </span>
+            <span className="text-sm">
+              <strong>Date: </strong>
+              {dateStr}
+            </span>
+          </div>
+        );
+      },
+      filterFn: (row, _columnId, filterValue) => {
+        if (
+          !filterValue ||
+          (Array.isArray(filterValue) && filterValue.length === 0)
+        )
+          return true;
+        const selected = Array.isArray(filterValue)
+          ? filterValue
+          : [filterValue];
+        const cellDate = row.original.date.split("T")[0]; 
+        return selected.includes(cellDate);
+      },
+      meta: {
+        filterType: "multiselect",
+        filterOptions: dateFilterOptions,
+        filterPlaceholder: "Filter by date...",
+      } as ColumnMeta,
     },
+
     {
-      accessorKey: "check_in",
+      accessorKey: "check_in_status",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Check In" />
       ),
@@ -175,7 +319,10 @@ const AttendanceHistoryList = () => {
             <span className="text-sm">
               <strong>Status: </strong>
               {status ? (
-                <Badge variant="outline" className="px-3 py-1 capitalize w-fit">
+                <Badge
+                  variant={getCheckInVariant(status)}
+                  className="px-3 py-1 capitalize w-fit"
+                >
                   {status}
                 </Badge>
               ) : (
@@ -185,9 +332,16 @@ const AttendanceHistoryList = () => {
           </div>
         );
       },
+      filterFn: "multiSelect",
+      meta: {
+        filterType: "multiselect",
+        filterOptions: checkInStatusFilterOptions,
+        filterPlaceholder: "Filter by check-in status...",
+      } as ColumnMeta,
     },
+
     {
-      accessorKey: "check_out",
+      accessorKey: "check_out_status", 
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Check Out" />
       ),
@@ -204,56 +358,8 @@ const AttendanceHistoryList = () => {
             <span className="text-sm">
               <strong>Status: </strong>
               {status ? (
-                <Badge variant="outline" className="px-3 py-1 capitalize w-fit">
-                  {status}
-                </Badge>
-              ) : (
-                <span className="text-muted-foreground">---</span>
-              )}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "work_day",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Hours / Status" />
-      ),
-      cell: ({ row }) => {
-        const workHours = row.original.work_hours ?? "---";
-        const statusRaw = row.original.day_status;
-        const status = statusRaw ? statusRaw.split("_").join(" ") : null;
-
-        const getVariant = (s: string | null) => {
-          switch (s) {
-            case "present":
-              return "success";
-            case "absent":
-              return "danger";
-            case "leave":
-              return "outline";
-            case "weekend":
-              return "secondary";
-            case "holiday":
-              return "secondary";
-            case "work from home":
-              return "success";
-            default:
-              return "outline";
-          }
-        };
-
-        return (
-          <div className="flex flex-col gap-1">
-            <span className="text-sm">
-              <strong>Hours: </strong> {workHours}
-            </span>
-            <span className="text-sm">
-              <strong>Day Status: </strong>
-              {status ? (
-                <Badge
-                  variant={getVariant(status)}
+               <Badge
+                  variant={getCheckOutVariant(status)}
                   className="px-3 py-1 capitalize w-fit"
                 >
                   {status}
@@ -265,10 +371,52 @@ const AttendanceHistoryList = () => {
           </div>
         );
       },
+      filterFn: "multiSelect",
+      meta: {
+        filterType: "multiselect",
+        filterOptions: checkOutStatusFilterOptions,
+        filterPlaceholder: "Filter by check-out status...",
+      } as ColumnMeta,
+    },
+
+    {
+      accessorKey: "day_status", 
+      header: ({ column }) => (
+        <DatatableColumnHeader column={column} title="Hours / Status" />
+      ),
+      cell: ({ row }) => {
+        const workHours = row.original.work_hours ?? "---";
+        const statusRaw = row.original.day_status;
+        const status = statusRaw ? statusRaw.split("_").join(" ") : null;
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-sm">
+              <strong>Hours: </strong> {workHours}
+            </span>
+            <span className="text-sm">
+              <strong>Day Status: </strong>
+              {status ? (
+                  <Badge
+                  variant={getDayStatusVariant(status)}
+                  className="px-3 py-1 capitalize w-fit"
+                >
+                  {status}
+                </Badge>
+              ) : (
+                <span className="text-muted-foreground">---</span>
+              )}
+            </span>
+          </div>
+        );
+      },
+      filterFn: "multiSelect",
+      meta: {
+        filterType: "multiselect",
+        filterOptions: dayStatusFilterOptions,
+        filterPlaceholder: "Filter by day status...",
+      } as ColumnMeta,
     },
   ];
-
-  // Rights Redirection
   if (rights?.can_view !== "1") {
     setTimeout(() => {
       router.back();
@@ -280,18 +428,12 @@ const AttendanceHistoryList = () => {
       />
     );
   }
-
-  // loading state
   if (employeeListLoading) {
     return <LoadingState />;
   }
-
-  // error state
   if (employeeListIsError) {
     return <Error err={employeeListError?.message} />;
   }
-
-  // empty state
   if (
     employeeListResponse?.payload?.length === 0 ||
     !employeeListResponse?.payload
@@ -305,8 +447,8 @@ const AttendanceHistoryList = () => {
 
       <>
         <form onSubmit={handleSubmit(onSubmit)} className="w-full">
-          <div className="space-y-6 flex gap-2 items-start justify-between sm:flex-wrap">
-            <div className="space-y-2 w-1/4">
+          <div className="flex flex-wrap items-start justify-center gap-4 md:gap-6 lg:flex-nowrap">
+            <div className="w-full sm:w-[48%] lg:w-1/4 space-y-2">
               <Controller
                 control={control}
                 name="employee_id"
@@ -345,115 +487,35 @@ const AttendanceHistoryList = () => {
                 </p>
               )}
             </div>
-
-            <div className="space-y-2 w-1/4">
+            <div className="w-full sm:w-[48%] lg:w-1/4 space-y-2">
               <Controller
                 control={control}
-                name="start_date"
+                name="dateRange"
                 rules={{ required: true }}
                 render={({ field }) => (
-                  <div className="space-y-2 lg:col-span-2">
-                    <div className={cn("grid gap-2")}>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "pl-3 text-left font-normal w-full",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(new Date(field.value), "PPP")
-                            ) : (
-                              <span>Pick a start date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={
-                              field.value ? new Date(field.value) : undefined
-                            }
-                            onSelect={(date) =>
-                              field.onChange(date ? date : null)
-                            }
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
+                  <DateRangePicker
+                    date={field.value}
+                    setDate={(date) => field.onChange(date)}
+                    className="w-full"
+                  />
                 )}
               />
-              {errors.start_date && (
-                <p className="text-red-500 text-sm">
-                  {errors.start_date.message}
-                </p>
+              {errors.dateRange && (
+                <p className="text-red-500 text-sm">Date range is required.</p>
               )}
             </div>
-
-            <div className="space-y-2 w-1/4">
-              <Controller
-                control={control}
-                name="end_date"
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <div className="space-y-2 lg:col-span-2">
-                    <div className={cn("grid gap-2")}>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "pl-3 text-left font-normal w-full",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(new Date(field.value), "PPP")
-                            ) : (
-                              <span>Pick a end date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={
-                              field.value ? new Date(field.value) : undefined
-                            }
-                            onSelect={(date) =>
-                              field.onChange(date ? date : null)
-                            }
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
-                )}
-              />
-              {errors.end_date && (
-                <p className="text-red-500 text-sm">
-                  {errors.end_date.message}
-                </p>
-              )}
-            </div>
-
-            <div>
+            <div className="w-full sm:w-auto flex items-end">
               <Button
                 type="submit"
-                className="min-w-[150px] cursor-pointer"
+                className="w-full sm:w-auto min-w-[150px] cursor-pointer"
                 size="lg"
                 disabled={fetchAttendanceHistoryMutation.isPending}
               >
                 {fetchAttendanceHistoryMutation.isPending
-                  ? "Submiting"
+                  ? "Submitting"
                   : "Submit"}
                 {fetchAttendanceHistoryMutation.isPending && (
-                  <span className="animate-spin">
+                  <span className="animate-spin ml-2">
                     <Loader2 />
                   </span>
                 )}
@@ -462,7 +524,6 @@ const AttendanceHistoryList = () => {
           </div>
         </form>
       </>
-
       {attendanceSummaryData && attendanceSummaryData.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
           {/* Total Days */}

@@ -31,10 +31,14 @@ export const AttendanceHistorySchema = z.object({
     .number({ message: "Employee ID is required" })
     .int({ message: "Employee ID must be an integer" })
     .positive({ message: "Employee ID must be a positive number" }),
-
-  start_date: z.date({ required_error: "Start date is required" }),
-
-  end_date: z.date({ required_error: "End date is required" }),
+  dateRange: z
+    .object({
+      from: z.date(),
+      to: z.date(),
+    })
+    .refine((data) => data.from && data.to, {
+      message: "Both start and end dates are required",
+    }),
 });
 
 export type AttendanceSchemaType = z.infer<typeof AttendanceSchema>;
