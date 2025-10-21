@@ -22,11 +22,8 @@ import { fetchEmployeeList } from "@/helperFunctions/employeeFunction";
 import LoadingState from "../foundations/loading-state";
 import Error from "../foundations/error";
 import { selectStyles } from "@/utils/selectStyles";
-import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "../shadcn/popover";
-import { format, isAfter, startOfMonth } from "date-fns";
-import { CalendarIcon, Loader2 } from "lucide-react";
-import { Calendar } from "../shadcn/calendar";
+import { format, startOfMonth } from "date-fns";
+import { Loader2 } from "lucide-react";
 import {
   AttendanceRecord,
   AttendanceSummaryPayload,
@@ -64,8 +61,6 @@ const AttendanceHistoryList = () => {
   const {
     handleSubmit,
     control,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm<AttendanceHistoryType>({
     resolver: zodResolver(AttendanceHistorySchema),
@@ -76,9 +71,6 @@ const AttendanceHistoryList = () => {
       },
     },
   });
-
-  const dateRange = watch("dateRange");
-
   const fetchAttendanceHistoryMutation = useMutation<
     axiosReturnType,
     AxiosError<any>,
