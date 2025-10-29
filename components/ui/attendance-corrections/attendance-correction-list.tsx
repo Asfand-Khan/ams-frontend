@@ -40,7 +40,7 @@ import SubNav from "../foundations/sub-nav";
 import Empty from "../foundations/empty";
 import LoadingState from "../foundations/loading-state";
 import Error from "../foundations/error";
-
+import { format } from "date-fns";
 const AttendanceCorrectionList: React.FC = () => {
   const ADD_URL = "/hr/attendance-corrections/add-attendance-correction";
   const router = useRouter();
@@ -73,7 +73,17 @@ const AttendanceCorrectionList: React.FC = () => {
     queryKey: ["attendance-correction-list"],
     queryFn: fetchAttendanceCorrectionList,
   });
-
+  const formatTime12Hour = (time: string | null | undefined) => {
+    if (!time || time === "---") return "---";
+    try {
+      const [hours, minutes] = time.split(":").map(Number);
+      const period = hours >= 12 ? "PM" : "AM";
+      const hour12 = hours % 12 || 12;
+      return `${hour12}:${minutes.toString().padStart(2, "0")} ${period}`;
+    } catch {
+      return time;
+    }
+  };
   // Memoized filter options for datatable
   const fullNameFilterOptions = useMemo(
     () =>
@@ -190,15 +200,19 @@ const AttendanceCorrectionList: React.FC = () => {
     },
     {
       id: "dates",
-      accessorKey:"Dates",
+      accessorKey: "Dates",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Dates" />
       ),
       cell: ({ row }) => {
-        const attendanceDate = row.original.attendance_date ?? "—";
-        const createdDate = row.original.created_at
-          ? row.original.created_at.split("T")[0]
-          : "—";
+        const attendanceDate = format(
+          row.original.attendance_date ?? "—",
+          "dd-MMM-yyyy"
+        );
+        const createdDate = format(
+          row.original.created_at ? row.original.created_at.split("T")[0] : "—",
+          "dd-MMM-yyyy"
+        );
 
         return (
           <div className="flex flex-col gap-1">
@@ -241,13 +255,15 @@ const AttendanceCorrectionList: React.FC = () => {
       } as ColumnMeta,
     },
     {
-      accessorKey:"Original Time",
+      accessorKey: "Original Time",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Original In/Out" />
       ),
       cell: ({ row }) => {
-        const checkIn = row.original.original_check_in ?? "—";
-        const checkOut = row.original.original_check_out ?? "—";
+        const checkIn = formatTime12Hour(row.original.original_check_in ?? "—");
+        const checkOut = formatTime12Hour(
+          row.original.original_check_out ?? "—"
+        );
         return (
           <div className="flex flex-col">
             <span>
@@ -263,13 +279,17 @@ const AttendanceCorrectionList: React.FC = () => {
       },
     },
     {
-      accessorKey:"Requested Time",
+      accessorKey: "Requested Time",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Requested In/Out" />
       ),
       cell: ({ row }) => {
-        const checkIn = row.original.requested_check_in ?? "—";
-        const checkOut = row.original.requested_check_out ?? "—";
+        const checkIn = formatTime12Hour(
+          row.original.requested_check_in ?? "—"
+        );
+        const checkOut = formatTime12Hour(
+          row.original.requested_check_out ?? "—"
+        );
         return (
           <div className="flex flex-col">
             <span className="text-sm">
@@ -283,43 +303,6 @@ const AttendanceCorrectionList: React.FC = () => {
           </div>
         );
       },
-    },
-
-    {
-      accessorKey: "reason",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Reason" />
-      ),
-      cell: ({ row }) => (
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button size="sm" variant="link">
-              View
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Reason for Correction</DialogTitle>
-              <DialogDescription>
-                The reason provided for the attendance correction request.
-              </DialogDescription>
-              <hr />
-            </DialogHeader>
-            <div className="flex items-center gap-2">
-              <div className="grid flex-1 gap-2">
-                {row.getValue("reason") ?? "—"}
-              </div>
-            </div>
-            <DialogFooter className="sm:justify-start mt-2">
-              <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  Close
-                </Button>
-              </DialogClose>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      ),
     },
     {
       accessorKey: "Request Type",
@@ -360,7 +343,7 @@ const AttendanceCorrectionList: React.FC = () => {
       } as ColumnMeta,
     },
     {
-       accessorKey:"Review Info",
+      accessorKey: "Review Info",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Review Info" />
       ),
@@ -368,7 +351,7 @@ const AttendanceCorrectionList: React.FC = () => {
         const reviewer = row.original.reviewer?.full_name ?? "—";
         const remarks = row.original.remarks ?? "—";
         const reviewDate = row.original.reviewed_on
-          ? row.original.reviewed_on.split("T")[0]
+          ? format(new Date(row.original.reviewed_on), "dd-MMM-yyyy")
           : "—";
 
         return (
@@ -382,6 +365,71 @@ const AttendanceCorrectionList: React.FC = () => {
             <span className="text-sm w-[200px] whitespace-pre-wrap break-words">
               <strong>Remarks:</strong> {remarks ?? "—"}
             </span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "reason",
+      header: ({ column }) => (
+        <DatatableColumnHeader column={column} title="Reason" />
+      ),
+      cell: ({ row }) => {
+        const reason = row.getValue("reason") as string | undefined;
+        const preview = reason ? reason.slice(0, 50) : "—";
+        const needsMore = reason && reason.length > 50;
+
+        return (
+          <div className="flex items-center gap-1.5 max-w-[150px]">
+            <span
+              className={`
+            text-sm text-foreground
+            ${needsMore ? "truncate" : "whitespace-normal"}
+          `}
+              title={reason}
+            >
+              {preview}
+              {needsMore && "..."}
+            </span>
+
+            {needsMore && (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="link"
+                    className="h-auto p-0 text-xs text-primary hover:underline"
+                  >
+                    View More
+                  </Button>
+                </DialogTrigger>
+
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Full Reason</DialogTitle>
+                    <DialogDescription>
+                      Complete reason provided for the attendance correction
+                      request.
+                    </DialogDescription>
+                    <hr />
+                  </DialogHeader>
+
+                  <div className="py-2">
+                    <p className="text-sm whitespace-pre-wrap break-words">
+                      {reason ?? "—"}
+                    </p>
+                  </div>
+
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button" variant="outline">
+                        Close
+                      </Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
         );
       },

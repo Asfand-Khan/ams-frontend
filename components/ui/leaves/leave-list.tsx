@@ -35,7 +35,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../shadcn/dialog";
-
+import { format } from "date-fns";
 
 const LeaveList = () => {
   const router = useRouter();
@@ -47,10 +47,7 @@ const LeaveList = () => {
     return getRights(pathname);
   }, [pathname]);
 
-  const {
-    getValues,
-    setValue,
-  } = useForm({
+  const { getValues, setValue } = useForm({
     resolver: zodResolver(leaveRequestApproveRejectSchema),
   });
 
@@ -146,8 +143,8 @@ const LeaveList = () => {
         <DatatableColumnHeader column={column} title="Leave Period" />
       ),
       cell: ({ row }) => {
-        const start = row.original.start_date ?? "---";
-        const end = row.original.end_date ?? "---";
+        const start = format(row.original.start_date ?? "---", "dd-MMM-yyyy");
+        const end = format(row.original.end_date ?? "---", "dd-MMM-yyyy");
         const total = row.original.total_days ?? "---";
         return (
           <div className="flex flex-col gap-1 text-sm">
@@ -262,7 +259,10 @@ const LeaveList = () => {
       ),
       cell: ({ row }) => {
         const approver = row.original.approver ?? "---";
-        const approveDate = row.original.applied_on?.split("T")[0] ?? "---";
+        const approveDate = format(
+          row.original.applied_on?.split("T")[0] ?? "---",
+          "dd-MMM-yyyy"
+        );
         return (
           <div className="flex flex-col gap-1 text-sm">
             <span>
@@ -276,48 +276,15 @@ const LeaveList = () => {
       },
     },
     {
-      accessorKey: "reason",
-      header: ({ column }) => (
-        <DatatableColumnHeader column={column} title="Reason" />
-      ),
-      cell: ({ row }) => (
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button size="sm" variant="link">
-              View
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Reason</DialogTitle>
-              <DialogDescription>
-                Below is the given reason for the leave request.
-              </DialogDescription>
-              <hr />
-            </DialogHeader>
-            <div className="flex items-center gap-2">
-              <div className="grid flex-1 gap-2">
-                {row.getValue("reason") ?? "---"}
-              </div>
-            </div>
-            <DialogFooter className="sm:justify-start mt-2">
-              <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  Close
-                </Button>
-              </DialogClose>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      ),
-    },
-    {
       accessorKey: "Created At",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Created Date" />
       ),
       cell: ({ row }) => {
-        const createDate = row.original.created_at?.split("T")[0] ?? "---";
+        const createDate = format(
+          row.original.created_at?.split("T")[0] ?? "---",
+          "dd-MMM-yyyy"
+        );
         return <div>{createDate}</div>;
       },
       filterFn: "multiSelect",
@@ -327,6 +294,85 @@ const LeaveList = () => {
         filterPlaceholder: "Filter create date...",
       } as ColumnMeta,
     },
+   {
+  accessorKey: "reason",
+  header: ({ column }) => (
+    <DatatableColumnHeader column={column} title="Reason" />
+  ),
+  cell: ({ row }) => {
+    const reason = row.getValue("reason") as string | undefined;
+    const preview = reason ? reason.slice(0, 50) : "---";
+    const needsMore = reason && reason.length > 50;
+
+    return (
+      <div className="relative flex items-center gap-1 max-w-[150px] group">
+        {/* Preview Text */}
+        <span
+          className={`
+            text-sm block
+            ${needsMore ? "truncate" : "whitespace-normal"}
+          `}
+          title={reason || ""}
+        >
+          {preview}
+          {needsMore && "..."}
+        </span>
+
+        {/* Hover Tooltip – Fixed Position & No Extra Space */}
+        {needsMore && (
+          <div
+            className="
+              pointer-events-none absolute left-0 top-full z-50
+              mt-1 w-64 max-w-xs rounded-md bg-black p-2 text-xs text-white
+              opacity-0 transition-opacity group-hover:opacity-100
+              shadow-lg whitespace-pre-wrap break-words
+              invisible group-hover:visible
+            "
+            style={{ transform: "translateX(-50%)", left: "50%" }} // Center tooltip
+          >
+            {reason}
+          </div>
+        )}
+
+        {/* View More Button */}
+        {needsMore && (
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="link"
+                className="h-auto p-0 text-xs text-primary hover:underline"
+              >
+                View more
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Reason</DialogTitle>
+                <DialogDescription>
+                  Below is the given reason for the leave request.
+                </DialogDescription>
+                <hr />
+              </DialogHeader>
+              <div className="py-2">
+                <p className="text-sm whitespace-pre-wrap break-words">
+                  {reason ?? "---"}
+                </p>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">
+                    Close
+                  </Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+    );
+  },
+},
   ];
 
   // Rights Redirection
