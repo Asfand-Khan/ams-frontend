@@ -71,6 +71,17 @@ const AttendanceHistoryList = () => {
       },
     },
   });
+  const formatTime12Hour = (time: string | null | undefined) => {
+    if (!time || time === "---") return "---";
+    try {
+      const [hours, minutes] = time.split(":").map(Number);
+      const period = hours >= 12 ? "PM" : "AM";
+      const hour12 = hours % 12 || 12;
+      return `${hour12}:${minutes.toString().padStart(2, "0")} ${period}`;
+    } catch {
+      return time;
+    }
+  };
   const fetchAttendanceHistoryMutation = useMutation<
     axiosReturnType,
     AxiosError<any>,
@@ -246,7 +257,7 @@ const getDayStatusVariant = (status: string | null) => {
             <strong>Name: </strong> {row.original.full_name ?? "---"}
           </span>
           <span className="text-sm">
-            <strong>Code: </strong> {row.original.employee_code ?? "---"}
+            <strong>Employee ID: </strong> {row.original.employee_code ?? "---"}
           </span>
         </div>
       ),
@@ -261,6 +272,7 @@ const getDayStatusVariant = (status: string | null) => {
         const dateObj = new Date(iso);
         const dayName = format(dateObj, "EEEE");
         const dateStr = iso.split("T")[0];
+        const formattedDate = format(dateStr, "dd-MMM-yyyy"); // e.g., 20-Aug-2025
         return (
           <div className="flex flex-col">
             <span className="text-sm">
@@ -269,7 +281,7 @@ const getDayStatusVariant = (status: string | null) => {
             </span>
             <span className="text-sm">
               <strong>Date: </strong>
-              {dateStr}
+              {formattedDate}
             </span>
           </div>
         );
@@ -299,7 +311,8 @@ const getDayStatusVariant = (status: string | null) => {
         <DatatableColumnHeader column={column} title="Check In" />
       ),
       cell: ({ row }) => {
-        const time = row.original.check_in_time ?? "---";
+        
+        const time = formatTime12Hour(row.original.check_in_time ?? "---");
         const statusRaw = row.original.check_in_status;
         const status = statusRaw ? statusRaw.split("_").join(" ") : null;
 
@@ -338,7 +351,7 @@ const getDayStatusVariant = (status: string | null) => {
         <DatatableColumnHeader column={column} title="Check Out" />
       ),
       cell: ({ row }) => {
-        const time = row.original.check_out_time ?? "---";
+        const time = formatTime12Hour(row.original.check_out_time ?? "---");
         const statusRaw = row.original.check_out_status;
         const status = statusRaw ? statusRaw.split("_").join(" ") : null;
 
@@ -520,7 +533,7 @@ const getDayStatusVariant = (status: string | null) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
           {/* Total Days */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Total Days</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">Total Days</p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].total_days}
             </p>
@@ -528,7 +541,7 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Working Days */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Working Days</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">Working Days</p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].working_days}
             </p>
@@ -536,7 +549,7 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Present Days */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Present</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">Present Days</p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].present_days}
             </p>
@@ -544,7 +557,7 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Absent Days */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Absent</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">Absent Days</p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].absent_days}
             </p>
@@ -552,7 +565,7 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Leave Days */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Leave</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">Leave Days</p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].leave_days}
             </p>
@@ -560,7 +573,7 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Weekend Attendance Days */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">
+            <p className="text-sm text-muted-foreground font-medium mb-1">
               Weekend Attendance
             </p>
             <p className="text-xl font-semibold">
@@ -570,7 +583,7 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Work From Home */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Work From Home</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">Work From Home</p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].work_from_home_days}
             </p>
@@ -578,8 +591,8 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* On Time Check Ins */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">
-              On Time Check Ins
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              On-Time Check-ins
             </p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].on_time_check_ins}
@@ -588,7 +601,7 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Late Check Ins */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Late Check Ins</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">Late Check-ins</p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].late_check_ins}
             </p>
@@ -596,8 +609,8 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Overtime Checkouts */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">
-              Overtime Checkouts
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              Overtime Check-outs
             </p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].overtime_check_outs}
@@ -606,8 +619,8 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Expected Working Hours */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">
-              Expected Working Hours
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              Expected Hours
             </p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].expected_work_hours}
@@ -616,7 +629,7 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Actual Working Hours */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Working Hours</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">Actual Working Hours</p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].actual_work_hours}
             </p>

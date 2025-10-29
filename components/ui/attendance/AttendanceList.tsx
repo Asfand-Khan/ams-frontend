@@ -67,7 +67,17 @@ const AttendanceList = () => {
         attendance_date: format(currentDate, "yyyy-MM-dd"),
       }),
   });
-
+  const formatTime12Hour = (time: string | null | undefined) => {
+    if (!time || time === "---") return "---";
+    try {
+      const [hours, minutes] = time.split(":").map(Number);
+      const period = hours >= 12 ? "PM" : "AM";
+      const hour12 = hours % 12 || 12;
+      return `${hour12}:${minutes.toString().padStart(2, "0")} ${period}`;
+    } catch {
+      return time;
+    }
+  };
   const fullNameFilterOptions = useMemo(() => {
     const allFullName =
       attendanceListResponse?.payload?.map((item) => item.full_name) || [];
@@ -96,9 +106,18 @@ const AttendanceList = () => {
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Attendance Date" />
       ),
-      cell: ({ row }) => (
-        <div>{String(row.getValue("date")).split("T")[0]}</div>
-      ),
+      cell: ({ row }) => {
+        const isoDate = row.getValue("date") as string;
+        const date = new Date(isoDate);
+        const dayName = format(date, "EEEE"); // e.g., Tuesday
+        const formattedDate = format(date, "dd-MMM-yyyy"); // e.g., 20-Aug-2025
+        return (
+          <div className="flex flex-col">
+            <span className="text-sm"><strong>Day: </strong>{formattedDate}</span>
+            <span className="text-sm"><strong>Date: </strong>{dayName}</span>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "CheckIn",
@@ -106,9 +125,24 @@ const AttendanceList = () => {
         <DatatableColumnHeader column={column} title="Check In" />
       ),
       cell: ({ row }) => {
-        const time = row.original.check_in_time ?? "---";
+        const time = formatTime12Hour(row.original.check_in_time);
         const statusRaw = row.original.check_in_status;
         const status = statusRaw ? statusRaw.split("_").join(" ") : null;
+
+        const getCheckInVariant = (s: string | null) => {
+          switch (s) {
+            case "on time":
+              return "success";
+            case "late":
+              return "warning";
+            case "absent":
+              return "danger";
+            case "manual":
+              return "neutral";
+            default:
+              return "outline";
+          }
+        };
 
         return (
           <div className="flex flex-col gap-1">
@@ -118,7 +152,10 @@ const AttendanceList = () => {
             <span className="text-sm">
               <strong>Status: </strong>
               {status ? (
-                <Badge variant="outline" className="px-3 py-1 capitalize w-fit">
+                <Badge
+                  variant={getCheckInVariant(status)}
+                  className="px-3 py-1 capitalize w-fit"
+                >
                   {status}
                 </Badge>
               ) : (
@@ -136,78 +173,101 @@ const AttendanceList = () => {
         <DatatableColumnHeader column={column} title="Check Out" />
       ),
       cell: ({ row }) => {
-        const time = row.original.check_out_time ?? "---";
+        const time = formatTime12Hour(row.original.check_out_time);
         const statusRaw = row.original.check_out_status;
         const status = statusRaw ? statusRaw.split("_").join(" ") : null;
+
+        const getCheckOutVariant = (s: string | null) => {
+          switch (s) {
+            case "on time":
+              return "success";
+            case "early leave":
+            case "early go":
+              return "warning";
+            case "overtime":
+              return "info";
+            case "manual":
+              return "neutral";
+            case "half day":
+              return "pending";
+            default:
+              return "outline";
+          }
+        };
 
         return (
           <div className="flex flex-col gap-1">
             <span className="text-sm">
               <strong>Time: </strong> {time}
             </span>
-             <span className="text-sm">
-               <strong>Status: </strong> 
-            {status ? (
-              <Badge variant="outline" className="px-3 py-1 capitalize w-fit">
-                {status}
-              </Badge>
-            ) : (
-              <span className="text-muted-foreground">---</span>
-            )}
+            <span className="text-sm">
+              <strong>Status: </strong>
+              {status ? (
+                <Badge
+                  variant={getCheckOutVariant(status)}
+                  className="px-3 py-1 capitalize w-fit"
+                >
+                  {status}
+                </Badge>
+              ) : (
+                <span className="text-muted-foreground">---</span>
+              )}
             </span>
           </div>
         );
       },
     },
 
-  {
-  accessorKey: "workDay",
-  header: ({ column }) => (
-    <DatatableColumnHeader column={column} title="Hours / Status" />
-  ),
-  cell: ({ row }) => {
-    const workHours = row.original.work_hours ?? "---";
-    const statusRaw = row.original.day_status;
-    const status = statusRaw ? statusRaw.split("_").join(" ") : null;
+    {
+      accessorKey: "workDay",
+      header: ({ column }) => (
+        <DatatableColumnHeader column={column} title="Hours / Status" />
+      ),
+      cell: ({ row }) => {
+        const workHours = row.original.work_hours ?? "---";
+        const statusRaw = row.original.day_status;
+        const status = statusRaw ? statusRaw.split("_").join(" ") : null;
 
-    const getVariant = (s: string | null) => {
-      switch (s) {
-        case "present":
-          return "success";
-        case "absent":
-          return "danger";
-        case "leave":
-          return "outline";
-        case "weekend":
-          return "secondary";
-        case "holiday":
-          return "secondary";
-        case "work from home":
-          return "success";
-        default:
-          return "outline";
-      }
-    };
+        const getDayStatusVariant = (s: string | null) => {
+          switch (s) {
+            case "present":
+              return "success";
+            case "absent":
+              return "danger";
+            case "leave":
+              return "warning";
+            case "weekend":
+            case "holiday":
+              return "secondary";
+            case "work from home":
+              return "info";
+            default:
+              return "outline";
+          }
+        };
 
-    return (
-      <div className="flex flex-col gap-1">
-        <span className="text-sm">
-          <strong>Hours: </strong> {workHours}
-        </span>
-         <span className="text-sm">
-            <strong>Day Status: </strong>
-        {status ? (
-          <Badge variant={getVariant(status)} className="px-3 py-1 capitalize w-fit">
-            {status}
-          </Badge>
-        ) : (
-          <span className="text-muted-foreground">---</span>
-        )}
-        </span>
-      </div>
-    );
-  },
-},
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-sm">
+              <strong>Hours: </strong> {workHours}
+            </span>
+            <span className="text-sm">
+              <strong>Day Status: </strong>
+              {status ? (
+                <Badge
+                  variant={getDayStatusVariant(status)}
+                  className="px-3 py-1 capitalize w-fit"
+                >
+                  {status}
+                </Badge>
+              ) : (
+                <span className="text-muted-foreground">---</span>
+              )}
+            </span>
+          </div>
+        );
+      },
+    },
 
     // {
     //   id: "actions",
@@ -311,7 +371,7 @@ const AttendanceList = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
           {/* Total Employees */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">
+            <p className="text-sm text-muted-foreground font-medium mb-1">
               Total Employees
             </p>
             <p className="text-xl font-semibold">
@@ -321,7 +381,7 @@ const AttendanceList = () => {
 
           {/* Present */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Present</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">Present</p>
             <p className="text-xl font-semibold">
               {dailyAttendanceSummaryResponse.payload[0].present}
             </p>
@@ -329,7 +389,7 @@ const AttendanceList = () => {
 
           {/* Absent */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Absent</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">Absent</p>
             <p className="text-xl font-semibold">
               {dailyAttendanceSummaryResponse.payload[0].absent}
             </p>
@@ -337,7 +397,7 @@ const AttendanceList = () => {
 
           {/* Work From Home */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Work From Home</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">Work From Home</p>
             <p className="text-xl font-semibold">
               {dailyAttendanceSummaryResponse.payload[0].work_from_home}
             </p>
@@ -345,7 +405,7 @@ const AttendanceList = () => {
 
           {/* Late Arrivals */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Late Arrivals</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">Late Arrivals</p>
             <p className="text-xl font-semibold">
               {dailyAttendanceSummaryResponse.payload[0].late_arrivals}
             </p>
@@ -353,7 +413,7 @@ const AttendanceList = () => {
 
           {/* On Leave */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">On Leave</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">On Leave</p>
             <p className="text-xl font-semibold">
               {dailyAttendanceSummaryResponse.payload[0].on_leave}
             </p>
