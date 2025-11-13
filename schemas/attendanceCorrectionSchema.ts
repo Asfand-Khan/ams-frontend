@@ -13,6 +13,18 @@ const isValidPastOrTodayDate = (dateStr: string): boolean => {
   return inputDate <= today;
 };
 
+// ---- helpers ------------------------------------------------------------
+const parseTime = (t: string) => {
+  // "HH:mm:ss"  →  minutes since midnight
+  const [h, m, s] = t.split(":").map(Number);
+  return h * 60 + m + s / 60;
+};
+
+const isCheckInBeforeCheckOut = (cin?: string, cout?: string): boolean => {
+  if (!cin || !cout) return true; // let Zod handle required fields
+  return parseTime(cin) < parseTime(cout);
+};
+
 export const attendanceCorrectionApproveRejectSchema = z.object({
   attendance_correction_id: z
     .number({ required_error: "Attendance correction ID is required" })
@@ -34,76 +46,94 @@ export const attendanceCorrectionApproveRejectSchema = z.object({
     .min(1, { message: "Remarks cannot be empty" }),
 });
 // Schema for creating attendance corrections
-export const attendanceCorrectionCreateSchema = z.object({
-  employee_id: z
-    .number({ required_error: "Employee ID is required" })
-    .int("Employee ID must be an integer")
-    .positive("Employee ID must be a positive number"),
+/* ---------- CREATE SCHEMA ---------- */
+export const attendanceCorrectionCreateSchema = z
+  .object({
+    employee_id: z
+      .number({ required_error: "Employee ID is required" })
+      .int("Employee ID must be an integer")
+      .positive("Employee ID must be a positive number"),
 
-  attendance_date: z
-    .string({ required_error: "Attendance date is required" })
-    .regex(dateRegex, "Attendance date must be in YYYY-MM-DD format")
-    .refine(isValidPastOrTodayDate, "Attendance date cannot be in the future"),
+    attendance_date: z
+      .string({ required_error: "Attendance date is required" })
+      .regex(dateRegex, "Attendance date must be in YYYY-MM-DD format")
+      .refine(isValidPastOrTodayDate, "Attendance date cannot be in the future"),
 
-  request_type: z.enum(
-    ["missed_check_in", "missed_check_out", "wrong_time", "both", "work_from_home"],
-    {
-      required_error: "Request type is required",
-    }
-  ),
+    request_type: z.enum(
+      ["missed_check_in", "missed_check_out", "wrong_time", "both", "work_from_home"],
+      { required_error: "Request type is required" }
+    ),
 
-  reason: z
-    .string({
-      required_error: "Reason is required",
-      invalid_type_error: "Reason must be a string",
-    })
-    .min(1, "Reason cannot be empty")
-    .max(500, "Reason cannot exceed 500 characters"),
+    reason: z
+      .string({ required_error: "Reason is required" })
+      .min(1, "Reason cannot be empty")
+      .max(500, "Reason cannot exceed 500 characters"),
 
-  requested_check_in_time: z
-    .string()
-    .regex(timeRegex, "Requested check-in time must be in HH:mm:ss format")
-    .nullable()
-    .optional(),
+    /* ---------- TIME FIELDS – FIXED ---------- */
+    requested_check_in_time: z
+      .string()
+      .optional()
+      .refine(
+        (v) => !v || timeRegex.test(v),
+        "Requested check-in time must be in HH:mm:ss format"
+      ),
 
-  requested_check_out_time: z
-    .string()
-    .regex(timeRegex, "Requested check-out time must be in HH:mm:ss format")
-    .nullable()
-    .optional(),
-}).superRefine((data, ctx) => {
-  // Conditional validation based on request_type
-  if (data.request_type === "missed_check_in" && !data.requested_check_in_time) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["requested_check_in_time"],
-      message: "Requested check-in time is required for 'missed_check_in' request type",
-    });
-  }
-  if (data.request_type === "missed_check_out" && !data.requested_check_out_time) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["requested_check_out_time"],
-      message: "Requested check-out time is required for 'missed_check_out' request type",
-    });
-  }
-  if (["wrong_time", "both"].includes(data.request_type)) {
-    if (!data.requested_check_in_time) {
+    requested_check_out_time: z
+      .string()
+      .optional()
+      .refine(
+        (v) => !v || timeRegex.test(v),
+        "Requested check-out time must be in HH:mm:ss format"
+      ),
+  })
+  .superRefine((data, ctx) => {
+    /* ---- Conditional required fields ---- */
+    if (data.request_type === "missed_check_in" && !data.requested_check_in_time) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["requested_check_in_time"],
-        message: "Requested check-in time is required for 'wrong_time' or 'both' request types",
+        message: "Check-in time is required for 'missed_check_in'",
       });
     }
-    if (!data.requested_check_out_time) {
+
+    if (data.request_type === "missed_check_out" && !data.requested_check_out_time) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["requested_check_out_time"],
-        message: "Requested check-out time is required for 'wrong_time' or 'both' request types",
+        message: "Check-out time is required for 'missed_check_out'",
       });
     }
-  }
-});
+
+    if (["wrong_time", "both", "work_from_home"].includes(data.request_type)) {
+      if (!data.requested_check_in_time) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["requested_check_in_time"],
+          message: "Check-in time is required",
+        });
+      }
+      if (!data.requested_check_out_time) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["requested_check_out_time"],
+          message: "Check-out time is required",
+        });
+      }
+    }
+
+    /* ---- Check-in < Check-out ---- */
+    if (
+      data.requested_check_in_time &&
+      data.requested_check_out_time &&
+      !isCheckInBeforeCheckOut(data.requested_check_in_time, data.requested_check_out_time)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["requested_check_in_time"], // error shown under Check-In
+        message: "Check-in time must be earlier than check-out time",
+      });
+    }
+  });
 export type AttendanceCorrectionApproveReject = z.infer<
   typeof attendanceCorrectionApproveRejectSchema
 >;

@@ -442,147 +442,169 @@ const AttendanceCorrectionList: React.FC = () => {
       ),
       cell: ({ row }) => {
         const record = row.original;
-
-        if (record.status === "pending") {
-          return (
-            <div className="flex items-center gap-2">
-              {/* Approve Dialog */}
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="default">
-                    Approve
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Approve Attendance Correction</DialogTitle>
-                    <DialogDescription>
-                      Provide remarks for approving this correction request.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="flex items-center gap-2">
-                    <div className="grid flex-1 gap-2">
-                      <Input
-                        type="text"
-                        placeholder="Enter approval remarks"
-                        {...register("remarks")}
-                      />
-                      {errors.remarks && (
-                        <span className="text-destructive text-sm">
-                          {errors.remarks.message}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <DialogFooter className="sm:justify-start">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={async () => {
-                        setValue("attendance_correction_id", record.id);
-                        setValue("status", "approved");
-                        setValue("employee_id", record.employee_id);
-                        const remarks = getValues("remarks");
-                        if (!remarks) {
-                          toast.error("Remarks are required");
-                          return;
-                        }
-                        const isValid = await trigger();
-                        if (isValid) {
-                          onSubmit(getValues());
-                        }
-                      }}
-                    >
-                      Submit
-                    </Button>
-                    <DialogClose asChild>
-                      <Button type="button" variant="outline">
-                        Cancel
-                      </Button>
-                    </DialogClose>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              {/* Reject Dialog */}
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="destructive">
-                    Reject
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Reject Attendance Correction</DialogTitle>
-                    <DialogDescription>
-                      Provide remarks for rejecting this correction request.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="flex items-center gap-2">
-                    <div className="grid flex-1 gap-2">
-                      <Input
-                        type="text"
-                        placeholder="Enter rejection remarks"
-                        {...register("remarks")}
-                      />
-                      {errors.remarks && (
-                        <span className="text-destructive text-sm">
-                          {errors.remarks.message}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <DialogFooter className="sm:justify-start">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={async () => {
-                        setValue("attendance_correction_id", record.id);
-                        setValue("status", "rejected");
-                        setValue("employee_id", record.employee_id);
-                        const remarks = getValues("remarks");
-                        if (!remarks) {
-                          toast.error("Remarks are required");
-                          return;
-                        }
-                        const isValid = await trigger();
-                        if (isValid) {
-                          onSubmit(getValues());
-                        }
-                      }}
-                    >
-                      Submit
-                    </Button>
-                    <DialogClose asChild>
-                      <Button type="button" variant="outline">
-                        Cancel
-                      </Button>
-                    </DialogClose>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-          );
-        }
-
-        if (record.status === "approved") {
-          return (
-            <div className="flex items-center gap-2">
+        const canEdit = rights?.can_edit === "1";
+        if (!canEdit) {
+          if (record.status === "pending") {
+            return (
+              <Badge variant="outline" className="px-3 py-1 capitalize">
+                Pending
+              </Badge>
+            );
+          }
+          if (record.status === "approved") {
+            return (
               <Badge variant="success" className="px-3 py-1 capitalize">
                 Approved
               </Badge>
-            </div>
-          );
-        }
-
-        if (record.status === "rejected") {
-          return (
-            <div className="flex items-center gap-2">
+            );
+          }
+          if (record.status === "rejected") {
+            return (
               <Badge variant="danger" className="px-3 py-1 capitalize">
                 Rejected
               </Badge>
-            </div>
-          );
+            );
+          }
+        } else {
+          if (record.status === "pending") {
+            return (
+              <div className="flex items-center gap-2">
+                {/* Approve Dialog */}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="default">
+                      Approve
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Approve Attendance Correction</DialogTitle>
+                      <DialogDescription>
+                        Provide remarks for approving this correction request.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex items-center gap-2">
+                      <div className="grid flex-1 gap-2">
+                        <Input
+                          type="text"
+                          placeholder="Enter approval remarks"
+                          {...register("remarks")}
+                        />
+                        {errors.remarks && (
+                          <span className="text-destructive text-sm">
+                            {errors.remarks.message}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <DialogFooter className="sm:justify-start">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={async () => {
+                          setValue("attendance_correction_id", record.id);
+                          setValue("status", "approved");
+                          setValue("employee_id", record.employee_id);
+                          const remarks = getValues("remarks");
+                          if (!remarks) {
+                            toast.error("Remarks are required");
+                            return;
+                          }
+                          const isValid = await trigger();
+                          if (isValid) {
+                            onSubmit(getValues());
+                          }
+                        }}
+                      >
+                        Submit
+                      </Button>
+                      <DialogClose asChild>
+                        <Button type="button" variant="outline">
+                          Cancel
+                        </Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Reject Dialog */}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="destructive">
+                      Reject
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Reject Attendance Correction</DialogTitle>
+                      <DialogDescription>
+                        Provide remarks for rejecting this correction request.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex items-center gap-2">
+                      <div className="grid flex-1 gap-2">
+                        <Input
+                          type="text"
+                          placeholder="Enter rejection remarks"
+                          {...register("remarks")}
+                        />
+                        {errors.remarks && (
+                          <span className="text-destructive text-sm">
+                            {errors.remarks.message}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <DialogFooter className="sm:justify-start">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={async () => {
+                          setValue("attendance_correction_id", record.id);
+                          setValue("status", "rejected");
+                          setValue("employee_id", record.employee_id);
+                          const remarks = getValues("remarks");
+                          if (!remarks) {
+                            toast.error("Remarks are required");
+                            return;
+                          }
+                          const isValid = await trigger();
+                          if (isValid) {
+                            onSubmit(getValues());
+                          }
+                        }}
+                      >
+                        Submit
+                      </Button>
+                      <DialogClose asChild>
+                        <Button type="button" variant="outline">
+                          Cancel
+                        </Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            );
+          }
+          if (record.status === "approved") {
+            return (
+              <div className="flex items-center gap-2">
+                <Badge variant="success" className="px-3 py-1 capitalize">
+                  Approved
+                </Badge>
+              </div>
+            );
+          }
+          if (record.status === "rejected") {
+            return (
+              <div className="flex items-center gap-2">
+                <Badge variant="danger" className="px-3 py-1 capitalize">
+                  Rejected
+                </Badge>
+              </div>
+            );
+          }
         }
         return null;
       },

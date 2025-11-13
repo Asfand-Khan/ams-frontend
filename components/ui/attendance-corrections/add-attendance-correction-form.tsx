@@ -21,7 +21,7 @@ import { selectStyles } from "@/utils/selectStyles";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "../shadcn/popover";
 import { Calendar } from "../shadcn/calendar";
-import { format, parse } from "date-fns";
+import { format, parse, startOfDay } from "date-fns";
 import { TimePicker12Demo } from "../foundations/time-picker";
 import { Input } from "../shadcn/input";
 
@@ -59,6 +59,7 @@ const AddAttendanceCorrectionForm: React.FC<
     formState: { errors },
     reset,
     control,
+    setValue,
   } = useForm<AttendanceCorrectionCreateSchemaType>({
     resolver: zodResolver(attendanceCorrectionCreateSchema),
     defaultValues: {
@@ -70,10 +71,13 @@ const AddAttendanceCorrectionForm: React.FC<
       requested_check_out_time: "",
     },
   });
-
-  // Watch request_type to conditionally render fields
+React.useEffect(() => {
+  const today = format(startOfDay(new Date()), "yyyy-MM-dd");
+  setValue("attendance_date", today);
+}, [setValue])
   const requestType = useWatch({ control, name: "request_type" });
 
+  
   // Mutation
   const addAttendanceMutation = useMutation<
     axiosReturnType,
