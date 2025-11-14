@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { Input } from "../shadcn/input";
 import Select from "react-select";
-import { selectStyles } from "@/utils/selectStyles";
+import { multiSelectStyle, singleSelectStyle } from "@/utils/selectStyles";
 import { UserPayload } from "@/types/userTypes";
 import {
   notificationSchema,
@@ -139,7 +139,7 @@ const AddNotificationForm: React.FC<AddNotificationFormProps> = ({ users }) => {
                     }
                     placeholder="Select priority"
                     className="w-full"
-                    styles={selectStyles}
+                    styles={singleSelectStyle}
                   />
                 );
               }}
@@ -173,7 +173,7 @@ const AddNotificationForm: React.FC<AddNotificationFormProps> = ({ users }) => {
                     }
                     placeholder="Select type"
                     className="w-full"
-                    styles={selectStyles}
+                    styles={singleSelectStyle}
                   />
                 );
               }}
@@ -209,17 +209,16 @@ const AddNotificationForm: React.FC<AddNotificationFormProps> = ({ users }) => {
                 <Select
                   id="user_id"
                   options={userOptions}
-                  value={
-                    userOptions?.find(
-                      (option) => option.value === field.value
-                    ) || null
-                  }
-                  onChange={(selectedOption) =>
-                    field.onChange(selectedOption ? selectedOption.value : null)
+                  value={userOptions?.filter((opt) =>
+                    field.value?.includes(opt.value)
+                  )}
+                  onChange={(opts) =>
+                    field.onChange(opts?.map((opt) => opt.value) || [])
                   }
                   placeholder="Select Employee"
                   className="w-full"
-                  styles={selectStyles}
+                  styles={multiSelectStyle}
+                  isMulti
                 />
               )}
             />

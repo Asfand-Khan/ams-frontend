@@ -10,7 +10,7 @@ import { Button } from "../shadcn/button";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { Input } from "../shadcn/input";
 import Select from "react-select";
-import { selectStyles } from "@/utils/selectStyles";
+import { singleSelectStyle} from "@/utils/selectStyles";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "../shadcn/popover";
 import { format } from "date-fns";
@@ -149,7 +149,7 @@ const AddMeetingForm: React.FC<AddMeetingFormProps> = ({ employees }) => {
                   }
                   placeholder="Select recurrence rule"
                   className="w-full"
-                  styles={selectStyles}
+                  styles={singleSelectStyle}
                 />
               )}
             />
@@ -182,7 +182,7 @@ const AddMeetingForm: React.FC<AddMeetingFormProps> = ({ employees }) => {
                   }
                   placeholder="Select recurrence type"
                   className="w-full"
-                  styles={selectStyles}
+                  styles={singleSelectStyle}
                 />
               )}
             />
@@ -373,7 +373,7 @@ const AddMeetingForm: React.FC<AddMeetingFormProps> = ({ employees }) => {
                   }
                   placeholder="Select location type"
                   className="w-full"
-                  styles={selectStyles}
+                  styles={singleSelectStyle}
                 />
               )}
             />
@@ -436,7 +436,7 @@ const AddMeetingForm: React.FC<AddMeetingFormProps> = ({ employees }) => {
                   }
                   placeholder="Select host"
                   className="w-full"
-                  styles={selectStyles}
+                  styles={singleSelectStyle}
                 />
               )}
             />

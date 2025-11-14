@@ -17,7 +17,7 @@ import {
 } from "@/schemas/attendanceCorrectionSchema";
 import Select from "react-select";
 import { EmployeePayloadType } from "@/types/employeeTypes";
-import { selectStyles } from "@/utils/selectStyles";
+import { singleSelectStyle} from "@/utils/selectStyles";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "../shadcn/popover";
 import { Calendar } from "../shadcn/calendar";
@@ -175,7 +175,7 @@ React.useEffect(() => {
                   }
                   placeholder="Select employee"
                   className="w-full"
-                  styles={selectStyles}
+                  styles={singleSelectStyle}
                 />
               )}
             />
@@ -272,7 +272,7 @@ React.useEffect(() => {
                     }
                     placeholder="Select request type"
                     className="w-full"
-                    styles={selectStyles}
+                    styles={singleSelectStyle}
                   />
                 </div>
               )}

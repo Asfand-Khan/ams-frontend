@@ -21,7 +21,7 @@ import { EmployeesResponseType } from "@/types/employeeTypes";
 import { fetchEmployeeList } from "@/helperFunctions/employeeFunction";
 import LoadingState from "../foundations/loading-state";
 import Error from "../foundations/error";
-import { selectStyles } from "@/utils/selectStyles";
+import { singleSelectStyle} from "@/utils/selectStyles";
 import { format, startOfMonth } from "date-fns";
 import { Loader2 } from "lucide-react";
 import {
@@ -481,7 +481,7 @@ const getDayStatusVariant = (status: string | null) => {
                       }
                       placeholder="Select employee"
                       className="w-full z-20"
-                      styles={selectStyles}
+                      styles={singleSelectStyle}
                     />
                   );
                 }}

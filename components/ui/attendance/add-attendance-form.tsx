@@ -17,7 +17,7 @@ import {
 } from "@/schemas/attendanceSchema";
 import Select from "react-select";
 import { EmployeePayloadType } from "@/types/employeeTypes";
-import { selectStyles } from "@/utils/selectStyles";
+import { singleSelectStyle } from "@/utils/selectStyles";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "../shadcn/popover";
 import { Calendar } from "../shadcn/calendar";
@@ -116,7 +116,7 @@ const AddAttendanceForm: React.FC<AddAttendanceFormProps> = ({
                   }
                   placeholder="Select employee"
                   className="w-full"
-                  styles={selectStyles}
+                  styles={singleSelectStyle}
                 />
               )}
             />

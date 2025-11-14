@@ -18,7 +18,7 @@ import {
 } from "@/schemas/designationSchema";
 import { DepartmentPayload } from "@/types/departmentTypes";
 import Select from "react-select";
-import { selectStyles } from "@/utils/selectStyles";
+import { singleSelectStyle} from "@/utils/selectStyles";
 
 interface AddDesignationFormProps {
   departments: DepartmentPayload[] | undefined;
@@ -156,7 +156,7 @@ const AddDesignationForm: React.FC<AddDesignationFormProps> = ({
                   }
                   placeholder="Select department"
                   className="w-full"
-                  styles={selectStyles}
+                  styles={singleSelectStyle}
                 />
               )}
             />

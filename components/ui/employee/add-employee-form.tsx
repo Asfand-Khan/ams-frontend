@@ -14,7 +14,7 @@ import { AxiosError } from "axios";
 import { Input } from "../shadcn/input";
 import { DepartmentPayload } from "@/types/departmentTypes";
 import Select from "react-select";
-import { selectStyles } from "@/utils/selectStyles";
+import { singleSelectStyle} from "@/utils/selectStyles";
 import { DesignationPayload } from "@/types/designationTypes";
 import { ShiftPayload } from "@/types/shiftTypes";
 import { TeamPayload } from "@/types/teamTypes";
@@ -237,7 +237,7 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({
                   }
                   placeholder="Select employee type"
                   className="w-full"
-                  styles={selectStyles}
+                  styles={singleSelectStyle}
                 />
               )}
             />
@@ -300,7 +300,7 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({
                   }
                   placeholder="Select gender"
                   className="w-full"
-                  styles={selectStyles}
+                  styles={singleSelectStyle}
                 />
               )}
             />
@@ -480,7 +480,7 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({
                   }
                   placeholder="Select department"
                   className="w-full"
-                  styles={selectStyles}
+                  styles={singleSelectStyle}
                 />
               )}
             />
@@ -513,7 +513,7 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({
                   }
                   placeholder="Select designation"
                   className="w-full"
-                  styles={selectStyles}
+                  styles={singleSelectStyle}
                 />
               )}
             />
@@ -546,7 +546,7 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({
                   }
                   placeholder="Select shift"
                   className="w-full"
-                  styles={selectStyles}
+                  styles={singleSelectStyle}
                 />
               )}
             />
@@ -577,7 +577,7 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({
                   }
                   placeholder="Select team"
                   className="w-full"
-                  styles={selectStyles}
+                  styles={singleSelectStyle}
                 />
               )}
             />
@@ -628,7 +628,7 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({
                   }
                   placeholder="Select status"
                   className="w-full"
-                  styles={selectStyles}
+                  styles={singleSelectStyle}
                 />
               )}
             />
