@@ -186,12 +186,16 @@ const AttendanceCorrectionList: React.FC = () => {
   // Define table columns
   const columns: ColumnDef<AttendanceCorrection>[] = [
     {
-      accessorKey: "Name",
+      accessorFn: (row) => row.employee.full_name ?? "",
+      id: "Name", // optional, just to identify the column
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Name" />
       ),
       cell: ({ row }) => <div>{row.original.employee.full_name}</div>,
-      filterFn: "multiSelect",
+      filterFn: (row, columnId, filterValues) => {
+        const cellValue = row.getValue(columnId);
+        return filterValues.includes(cellValue);
+      },
       meta: {
         filterType: "multiselect",
         filterOptions: fullNameFilterOptions,
@@ -305,7 +309,8 @@ const AttendanceCorrectionList: React.FC = () => {
       },
     },
     {
-      accessorKey: "Request Type",
+      accessorFn: (row) => row.request_type ?? "",
+      id: "request_type",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Request Type" />
       ),
@@ -335,7 +340,10 @@ const AttendanceCorrectionList: React.FC = () => {
           </Badge>
         );
       },
-      filterFn: "multiSelect",
+      filterFn: (row, columnId, filterValues) => {
+        const cellValue = row.getValue(columnId); // raw request_type
+        return filterValues.includes(cellValue);
+      },
       meta: {
         filterType: "multiselect",
         filterOptions: requestTypeFilterOptions,

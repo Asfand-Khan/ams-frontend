@@ -62,23 +62,24 @@ const NotificationList = () => {
   });
 
   const nameFilterOptions = useMemo(() => {
-    const allEmployeeCode =
+    const allUsernames =
       notificationListResponse?.payload?.map((item) => item.user?.username) ||
       [];
-    const uniqueEmployeeCode = Array.from(new Set(allEmployeeCode));
-    return uniqueEmployeeCode.map((code) => ({
-      label: code,
-      value: code,
+    const uniqueUsernames = Array.from(new Set(allUsernames));
+    return uniqueUsernames.map((username) => ({
+      label: capitalizeFirstLetter(username), // for display
+      value: username, // for filtering
     }));
   }, [notificationListResponse]);
-
   const createdAtFilterOptions = useMemo(() => {
-    const allEmployeeCode =
-      notificationListResponse?.payload?.map((item) => item.created_at) || [];
-    const uniqueEmployeeCode = Array.from(new Set(allEmployeeCode));
-    return uniqueEmployeeCode.map((code) => ({
-      label: code,
-      value: code,
+    const allDates =
+      notificationListResponse?.payload?.map(
+        (item) => item.created_at?.split("T")[0] // extract only date
+      ) || [];
+    const uniqueDates = Array.from(new Set(allDates));
+    return uniqueDates.map((date) => ({
+      label: date,
+      value: date, // same as what you display
     }));
   }, [notificationListResponse]);
 
@@ -127,14 +128,14 @@ const NotificationList = () => {
               View
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-lg max-h-[400px] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Message</DialogTitle>
               <DialogDescription>Below is the message.</DialogDescription>
               <hr />
             </DialogHeader>
             <div className="flex items-center gap-2">
-              <div className="grid flex-1 gap-2">
+              <div className="flex-1 gap-2 whitespace-pre-wrap">
                 {row.getValue("message") ?? "---"}
               </div>
             </div>
@@ -176,7 +177,8 @@ const NotificationList = () => {
       },
     },
     {
-      accessorKey: "created_at",
+      accessorFn: (row) => row.created_at?.split("T")[0] ?? "", // returns only date
+      id: "created_at",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Create Date" />
       ),
@@ -184,7 +186,10 @@ const NotificationList = () => {
         const createDate = row.original.created_at?.split("T")[0] ?? "---";
         return <div>{createDate}</div>;
       },
-      filterFn: "multiSelect",
+      filterFn: (row, columnId, filterValues) => {
+        const cellValue = row.getValue(columnId); // this is only the date part
+        return filterValues.includes(cellValue);
+      },
       meta: {
         filterType: "multiselect",
         filterOptions: createdAtFilterOptions,
