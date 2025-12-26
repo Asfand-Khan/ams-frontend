@@ -21,30 +21,112 @@ import { EmployeesResponseType } from "@/types/employeeTypes";
 import { fetchEmployeeList } from "@/helperFunctions/employeeFunction";
 import LoadingState from "../foundations/loading-state";
 import Error from "../foundations/error";
-import { singleSelectStyle} from "@/utils/selectStyles";
+import { singleSelectStyle } from "@/utils/selectStyles";
 import { format, startOfMonth } from "date-fns";
 import { Loader2 } from "lucide-react";
 import {
   AttendanceRecord,
   AttendanceSummaryPayload,
 } from "@/types/attendanceTypes";
+
 import { ColumnDef } from "@tanstack/react-table";
 import { ColumnMeta } from "@/types/dataTableTypes";
 import DatatableColumnHeader from "../datatable/datatable-column-header";
 import AttendanceHistoryDatatable from "./attendancehistory-datatable";
 import { Badge } from "../foundations/badge";
 import { DateRangePicker } from "@/lib/date-picker";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../shadcn/tooltip";
+interface SummaryCardProps {
+  title: string;
+  value: number | string;
+  subtitle?: string;
+  bgColor?: string; // Optional background color
+}
 
+const SummaryCard: React.FC<SummaryCardProps> = ({
+  title,
+  value,
+  subtitle,
+  bgColor,
+}) => {
+  return (
+    <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
+      <p className="text-sm text-muted-foreground font-medium mb-1">{title}</p>
+      <p className="text-2xl font-bold">{value}</p>
+      {subtitle && (
+        <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+      )}
+    </div>
+  );
+};
+const LeaveDetailCard: React.FC<{
+  title: string;
+  details: string[];
+  usedDays: number;
+}> = ({ title, details, usedDays }) => {
+  const hasDetails = details.length > 0 && details[0] !== "No Sick Leave";
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="bg-white border rounded-lg shadow-sm p-8 text-center cursor-pointer hover:shadow-lg transition-shadow">
+            <p className="text-xl font-semibold capitalize">{title} Leave</p>
+            <p className="text-4xl font-bold mt-4">{usedDays}</p>
+            <p className="text-sm text-muted-foreground mt-3">days used</p>
+            {hasDetails && (
+              <p className="text-xs text-blue-600 mt-4">Hover to see dates →</p>
+            )}
+          </div>
+        </TooltipTrigger>
+
+        {hasDetails && (
+          <TooltipContent className="max-w-md">
+            <div className="space-y-2">
+              <p className="font-semibold text-sm">{title} Leave Dates</p>
+              <ul className="text-sm space-y-1 list-disc list-inside">
+                {details.map((detail, idx) => (
+                  <li key={idx}>{detail}</li>
+                ))}
+              </ul>
+            </div>
+          </TooltipContent>
+        )}
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
 const AttendanceHistoryList = () => {
   const router = useRouter();
   const pathname = usePathname();
   const [attendanceHistoryData, setAttendanceHistoryData] = React.useState<
     AttendanceRecord[]
   >([]);
+  const [leaveDetailData, setLeaveDetailData] = React.useState<
+    {
+      employee_id: number;
+      full_name: string;
+      annual: string[];
+      sick: string[];
+      casual: string[];
+    }[]
+  >([]);
   const [attendanceSummaryData, setAttendanceSummaryData] = React.useState<
     AttendanceSummaryPayload[]
   >([]);
-
+  const [leaveSummaryData, setLeaveSummaryData] = React.useState<
+    {
+      leave_type: string;
+      used_days: number;
+      total_quota: number;
+      remaining: number;
+    }[]
+  >([]);
   const rights = useMemo(() => {
     return getRights(pathname);
   }, [pathname]);
@@ -82,6 +164,50 @@ const AttendanceHistoryList = () => {
       return time;
     }
   };
+  const fetchLeaveSummaryMutation = useMutation<
+    axiosReturnType,
+    AxiosError<any>,
+    { employee_id: number }
+  >({
+    mutationFn: ({ employee_id }) => {
+      return axiosFunction({
+        method: "POST",
+        urlPath: "/leaves/summary",
+        data: { employee_id },
+        isServer: true,
+      });
+    },
+    onError: (err) => {
+      const message = err?.response?.data?.message;
+      console.log("Fetch leave summary error", err);
+      toast.error(message);
+    },
+    onSuccess: (data) => {
+      setLeaveSummaryData(data?.payload || []);
+    },
+  });
+  const fetchLeaveDetailMutation = useMutation<
+    axiosReturnType,
+    AxiosError<any>,
+    { employee_id: number }
+  >({
+    mutationFn: ({ employee_id }) => {
+      return axiosFunction({
+        method: "POST",
+        urlPath: "/leaves/getEmployeeLeaveDetail", // نیا API
+        data: { employee_id },
+        isServer: true,
+      });
+    },
+    onError: (err) => {
+      const message =
+        err?.response?.data?.message || "Failed to fetch leave details";
+      toast.error(message);
+    },
+    onSuccess: (data) => {
+      setLeaveDetailData(data?.payload || []);
+    },
+  });
   const fetchAttendanceHistoryMutation = useMutation<
     axiosReturnType,
     AxiosError<any>,
@@ -148,7 +274,13 @@ const AttendanceHistoryList = () => {
   });
 
   const onSubmit = (data: AttendanceHistoryType) => {
+    const employee_id = data.employee_id;
+
     fetchAttendanceSummaryMutation.mutate(data);
+    if (employee_id) {
+      fetchLeaveSummaryMutation.mutate({ employee_id });
+      fetchLeaveDetailMutation.mutate({ employee_id });
+    }
     fetchAttendanceHistoryMutation.mutate(data);
   };
   /* --------------------------- FILTER OPTIONS --------------------------- */
@@ -194,55 +326,55 @@ const AttendanceHistoryList = () => {
   }, [attendanceHistoryData]);
 
   const getCheckInVariant = (status: string | null) => {
-  switch (status) {
-    case "on time":
-      return "success";
-    case "late":
-      return "warning";
-    case "absent":
-      return "danger";
-    case "manual":
-      return "neutral";
-    default:
-      return "outline";
-  }
-};
+    switch (status) {
+      case "on time":
+        return "success";
+      case "late":
+        return "warning";
+      case "absent":
+        return "danger";
+      case "manual":
+        return "neutral";
+      default:
+        return "outline";
+    }
+  };
 
-const getCheckOutVariant = (status: string | null) => {
-  switch (status) {
-    case "on time":
-      return "success";
-    case "early leave":
-    case "early go":
-      return "warning";
-    case "overtime":
-      return "info";
-    case "manual":
-      return "neutral";
-    case "half day":
-      return "pending";
-    default:
-      return "outline";
-  }
-};
+  const getCheckOutVariant = (status: string | null) => {
+    switch (status) {
+      case "on time":
+        return "success";
+      case "early leave":
+      case "early go":
+        return "warning";
+      case "overtime":
+        return "info";
+      case "manual":
+        return "neutral";
+      case "half day":
+        return "pending";
+      default:
+        return "outline";
+    }
+  };
 
-const getDayStatusVariant = (status: string | null) => {
-  switch (status) {
-    case "present":
-      return "success";
-    case "absent":
-      return "danger";
-    case "leave":
-      return "warning";
-    case "weekend":
-    case "holiday":
-      return "secondary";
-    case "work from home":
-      return "info";
-    default:
-      return "neutral";
-  }
-};
+  const getDayStatusVariant = (status: string | null) => {
+    switch (status) {
+      case "present":
+        return "success";
+      case "absent":
+        return "danger";
+      case "leave":
+        return "warning";
+      case "weekend":
+      case "holiday":
+        return "secondary";
+      case "work from home":
+        return "info";
+      default:
+        return "neutral";
+    }
+  };
 
   /* ----------------------------- COLUMNS ----------------------------- */
   const columns: ColumnDef<AttendanceRecord>[] = [
@@ -295,7 +427,7 @@ const getDayStatusVariant = (status: string | null) => {
         const selected = Array.isArray(filterValue)
           ? filterValue
           : [filterValue];
-        const cellDate = row.original.date.split("T")[0]; 
+        const cellDate = row.original.date.split("T")[0];
         return selected.includes(cellDate);
       },
       meta: {
@@ -311,7 +443,6 @@ const getDayStatusVariant = (status: string | null) => {
         <DatatableColumnHeader column={column} title="Check In" />
       ),
       cell: ({ row }) => {
-        
         const time = formatTime12Hour(row.original.check_in_time ?? "---");
         const statusRaw = row.original.check_in_status;
         const status = statusRaw ? statusRaw.split("_").join(" ") : null;
@@ -346,7 +477,7 @@ const getDayStatusVariant = (status: string | null) => {
     },
 
     {
-      accessorKey: "check_out_status", 
+      accessorKey: "check_out_status",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Check Out" />
       ),
@@ -363,7 +494,7 @@ const getDayStatusVariant = (status: string | null) => {
             <span className="text-sm">
               <strong>Status: </strong>
               {status ? (
-               <Badge
+                <Badge
                   variant={getCheckOutVariant(status)}
                   className="px-3 py-1 capitalize w-fit"
                 >
@@ -385,7 +516,7 @@ const getDayStatusVariant = (status: string | null) => {
     },
 
     {
-      accessorKey: "day_status", 
+      accessorKey: "day_status",
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Hours / Status" />
       ),
@@ -401,7 +532,7 @@ const getDayStatusVariant = (status: string | null) => {
             <span className="text-sm">
               <strong>Day Status: </strong>
               {status ? (
-                  <Badge
+                <Badge
                   variant={getDayStatusVariant(status)}
                   className="px-3 py-1 capitalize w-fit"
                 >
@@ -445,7 +576,11 @@ const getDayStatusVariant = (status: string | null) => {
   ) {
     return <Empty title="Not Found" description="No employees found." />;
   }
-
+  const currentLeaveDetail = leaveDetailData[0] || {
+    annual: [],
+    sick: [],
+    casual: [],
+  };
   return (
     <>
       <SubNav title="Attendance History List" />
@@ -533,7 +668,9 @@ const getDayStatusVariant = (status: string | null) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
           {/* Total Days */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground font-medium mb-1">Total Days</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              Total Days
+            </p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].total_days}
             </p>
@@ -541,7 +678,9 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Working Days */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground font-medium mb-1">Working Days</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              Working Days
+            </p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].working_days}
             </p>
@@ -549,7 +688,9 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Present Days */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground font-medium mb-1">Present Days</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              Present Days
+            </p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].present_days}
             </p>
@@ -557,7 +698,9 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Absent Days */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground font-medium mb-1">Absent Days</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              Absent Days
+            </p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].absent_days}
             </p>
@@ -565,7 +708,9 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Leave Days */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground font-medium mb-1">Leave Days</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              Leave Days
+            </p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].leave_days}
             </p>
@@ -583,7 +728,9 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Work From Home */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground font-medium mb-1">Work From Home</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              Work From Home
+            </p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].work_from_home_days}
             </p>
@@ -601,7 +748,9 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Late Check Ins */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground font-medium mb-1">Late Check-ins</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              Late Check-ins
+            </p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].late_check_ins}
             </p>
@@ -629,10 +778,58 @@ const getDayStatusVariant = (status: string | null) => {
 
           {/* Actual Working Hours */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground font-medium mb-1">Actual Working Hours</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              Actual Working Hours
+            </p>
             <p className="text-xl font-semibold">
               {attendanceSummaryData[0].actual_work_hours}
             </p>
+          </div>
+        </div>
+      )}
+      {leaveSummaryData && leaveSummaryData.length > 0 && (
+        <div className="mb-10">
+          <h2 className="text-2xl font-semibold text-center mb-4">
+            Leave Summary & Details
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
+            {leaveSummaryData.map((leave) => (
+              <div
+                key={leave.leave_type}
+                className="relative group transition-transform duration-300 hover:scale-105"
+              >
+                <SummaryCard
+                  title={`${leave.leave_type} Leave`}
+                  value={leave.used_days}
+                  subtitle={`Remaining: ${leave.remaining} / Total: ${leave.total_quota}`}
+                />
+                {leaveDetailData.length > 0 &&
+                  currentLeaveDetail[leave.leave_type.toLowerCase()]?.length >
+                    0 && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="absolute inset-0 cursor-pointer" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-md">
+                          <div className="space-y-2">
+                            <p className="font-semibold text-sm">
+                              {leave.leave_type} Leave Dates
+                            </p>
+                            <ul className="text-sm space-y-1 list-disc list-inside">
+                              {currentLeaveDetail[
+                                leave.leave_type.toLowerCase()
+                              ].map((detail, idx) => (
+                                <li key={idx}>{detail}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+              </div>
+            ))}
           </div>
         </div>
       )}
