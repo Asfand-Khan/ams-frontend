@@ -45,14 +45,12 @@ interface SummaryCardProps {
   title: string;
   value: number | string;
   subtitle?: string;
-  bgColor?: string; // Optional background color
 }
 
 const SummaryCard: React.FC<SummaryCardProps> = ({
   title,
   value,
   subtitle,
-  bgColor,
 }) => {
   return (
     <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
@@ -62,43 +60,6 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
         <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
       )}
     </div>
-  );
-};
-const LeaveDetailCard: React.FC<{
-  title: string;
-  details: string[];
-  usedDays: number;
-}> = ({ title, details, usedDays }) => {
-  const hasDetails = details.length > 0 && details[0] !== "No Sick Leave";
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="bg-white border rounded-lg shadow-sm p-8 text-center cursor-pointer hover:shadow-lg transition-shadow">
-            <p className="text-xl font-semibold capitalize">{title} Leave</p>
-            <p className="text-4xl font-bold mt-4">{usedDays}</p>
-            <p className="text-sm text-muted-foreground mt-3">days used</p>
-            {hasDetails && (
-              <p className="text-xs text-blue-600 mt-4">Hover to see dates →</p>
-            )}
-          </div>
-        </TooltipTrigger>
-
-        {hasDetails && (
-          <TooltipContent className="max-w-md">
-            <div className="space-y-2">
-              <p className="font-semibold text-sm">{title} Leave Dates</p>
-              <ul className="text-sm space-y-1 list-disc list-inside">
-                {details.map((detail, idx) => (
-                  <li key={idx}>{detail}</li>
-                ))}
-              </ul>
-            </div>
-          </TooltipContent>
-        )}
-      </Tooltip>
-    </TooltipProvider>
   );
 };
 const AttendanceHistoryList = () => {
