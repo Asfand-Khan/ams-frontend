@@ -41,7 +41,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../shadcn/tooltip";
-import { attendancehistoryPDF, attendancehistoryPDFV2 } from "../pdf/generic-pdf-generations";
+import { attendancehistoryPDF } from "../pdf/generic-pdf-generations";
 interface SummaryCardProps {
   title: string;
   value: number | string;
