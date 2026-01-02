@@ -46,6 +46,8 @@
     "framer-motion": "^12.19.1",
     "input-otp": "^1.4.2",
     "jodit-react": "^5.2.19",
+    "jspdf": "^3.0.4",
+    "jspdf-autotable": "^5.0.2",
     "lexical": "^0.34.0",
     "lucide-react": "^0.518.0",
     "next": "15.3.4",

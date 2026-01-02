@@ -3,7 +3,7 @@
 import { getRights } from "@/utils/getRights";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { Button } from "../shadcn/button";
 import Empty from "../foundations/empty";
 import SubNav from "../foundations/sub-nav";
@@ -41,11 +41,24 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../shadcn/tooltip";
+import { attendancehistoryPDF, attendancehistoryPDFV2 } from "../pdf/generic-pdf-generations";
 interface SummaryCardProps {
   title: string;
   value: number | string;
   subtitle?: string;
 }
+
+export const formatTime12Hour = (time: string | null | undefined) => {
+  if (!time || time === "---") return "---";
+  try {
+    const [hours, minutes] = time.split(":").map(Number);
+    const period = hours >= 12 ? "PM" : "AM";
+    const hour12 = hours % 12 || 12;
+    return `${hour12}:${minutes.toString().padStart(2, "0")} ${period}`;
+  } catch {
+    return time;
+  }
+};
 
 const SummaryCard: React.FC<SummaryCardProps> = ({
   title,
@@ -62,12 +75,14 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
     </div>
   );
 };
+
 const AttendanceHistoryList = () => {
   const router = useRouter();
   const pathname = usePathname();
   const [attendanceHistoryData, setAttendanceHistoryData] = React.useState<
     AttendanceRecord[]
   >([]);
+
   const [leaveDetailData, setLeaveDetailData] = React.useState<
     {
       employee_id: number;
@@ -104,6 +119,7 @@ const AttendanceHistoryList = () => {
   const {
     handleSubmit,
     control,
+    watch,
     formState: { errors },
   } = useForm<AttendanceHistoryType>({
     resolver: zodResolver(AttendanceHistorySchema),
@@ -114,17 +130,21 @@ const AttendanceHistoryList = () => {
       },
     },
   });
-  const formatTime12Hour = (time: string | null | undefined) => {
-    if (!time || time === "---") return "---";
-    try {
-      const [hours, minutes] = time.split(":").map(Number);
-      const period = hours >= 12 ? "PM" : "AM";
-      const hour12 = hours % 12 || 12;
-      return `${hour12}:${minutes.toString().padStart(2, "0")} ${period}`;
-    } catch {
-      return time;
-    }
-  };
+const attendancehistoryPDFExport = useCallback(() => {
+    const selectedDateRange = watch("dateRange");
+   attendancehistoryPDF(
+  attendanceHistoryData,
+  attendanceSummaryData.length > 0 ? attendanceSummaryData : undefined,
+  leaveSummaryData.length > 0 ? leaveSummaryData : undefined,
+  leaveDetailData.length > 0 ? leaveDetailData : undefined,
+  selectedDateRange
+);
+  }, [
+    attendanceHistoryData,
+    attendanceSummaryData,
+    leaveSummaryData,
+    watch, 
+  ]);
   const fetchLeaveSummaryMutation = useMutation<
     axiosReturnType,
     AxiosError<any>,
@@ -514,6 +534,7 @@ const AttendanceHistoryList = () => {
       } as ColumnMeta,
     },
   ];
+
   if (rights?.can_view !== "1") {
     setTimeout(() => {
       router.back();
@@ -605,7 +626,7 @@ const AttendanceHistoryList = () => {
                 <p className="text-red-500 text-sm">Date range is required.</p>
               )}
             </div>
-            <div className="w-full sm:w-auto flex items-end">
+            <div className="w-full sm:w-auto flex items-end gap-3">
               <Button
                 type="submit"
                 className="w-full sm:w-auto min-w-[150px] cursor-pointer"
@@ -621,6 +642,16 @@ const AttendanceHistoryList = () => {
                   </span>
                 )}
               </Button>
+              {attendanceHistoryData.length > 0 && (
+                <Button
+                  type="button"
+                  size="lg"
+                  className="w-full sm:w-auto min-w-[150px] cursor-pointer"
+                  onClick={attendancehistoryPDFExport}
+                >
+                  Export PDF
+                </Button>
+              )}
             </div>
           </div>
         </form>
@@ -794,7 +825,6 @@ const AttendanceHistoryList = () => {
           </div>
         </div>
       )}
-
       <AttendanceHistoryDatatable
         columns={columns}
         payload={attendanceHistoryData}
