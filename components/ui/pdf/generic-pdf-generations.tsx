@@ -368,7 +368,7 @@ export const attendancehistoryPDF = (
   doc.text("Attendance & Leave Report", pageWidth / 2, 15, { align: "center" });
   const employeeName =
     attendanceHistoryData[0]?.full_name || "Unknown Employee";
-  const employeeCode = attendanceHistoryData[0]?.employee_code || "---";
+  // const employeeCode = attendanceHistoryData[0]?.employee_code || "---";
   doc.setFontSize(12);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(0);
