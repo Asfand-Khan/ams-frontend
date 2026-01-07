@@ -24,25 +24,18 @@ import {
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Badge } from "../foundations/badge";
+import Image from "next/image";
 
 const AttendanceList = () => {
-  // Constants
   const ADD_URL = "/hr/attendance/add-attendance";
-  // const EDIT_URL = "/hr/attendance/edit-attendance";
-
   // zustand
   // const { setAttendanceId } = useAttendanceIdStore();
   const [currentDate] = React.useState<Date>(new Date());
-
   const router = useRouter();
   const pathname = usePathname();
-
-  // Rights
   const rights = useMemo(() => {
     return getRights(pathname);
   }, [pathname]);
-
-  // Fetch attendance list data using react-query
   const {
     data: dailyAttendanceSummaryResponse,
     isLoading: dailyAttendanceSummaryLoading,
@@ -93,7 +86,26 @@ const AttendanceList = () => {
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Name" />
       ),
-      cell: ({ row }) => <div>{row.getValue("full_name")}</div>,
+      cell: ({ row }) => {
+        const fullName = row.getValue("full_name") as string;
+        const profilePicture = row.original.profile_picture;
+        const src = profilePicture
+          ? `${process.env.NEXT_PUBLIC_IMAGE_BASE_URL}${profilePicture}`
+          : `${process.env.NEXT_PUBLIC_IMAGE_BASE_URL}default.png`;
+
+        return (
+          <div className="flex items-center gap-3">
+            <Image
+              src={src}
+              alt={fullName}
+              width={100}
+              height={100}
+              className="h-10 w-10 rounded-full object-cover"
+            />
+            <span>{fullName}</span>
+          </div>
+        );
+      },
       filterFn: "multiSelect",
       meta: {
         filterType: "multiselect",
@@ -109,10 +121,10 @@ const AttendanceList = () => {
       cell: ({ row }) => {
         const isoDate = row.getValue("date") as string;
         const date = new Date(isoDate);
-        const dayName = format(date, "EEEE"); // e.g., Tuesday
-        const formattedDate = format(date, "dd-MMM-yyyy"); // e.g., 20-Aug-2025
+        const dayName = format(date, "EEEE");
+        const formattedDate = format(date, "dd-MMM-yyyy");
         return (
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-1">
             <span className="text-sm"><strong>Day: </strong>{formattedDate}</span>
             <span className="text-sm"><strong>Date: </strong>{dayName}</span>
           </div>

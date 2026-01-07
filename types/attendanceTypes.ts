@@ -10,6 +10,7 @@ export interface AttendanceRecord {
   check_in_status: string | null;
   check_out_status: string | null;
   day_status: string | null;
+   profile_picture?: string | null;
   work_hours: string | null;
   check_in_office: string | null;
   check_out_office: string | null;
