@@ -7,7 +7,7 @@ const AuthLayout = ({ children }: { children: ReactNode }) => {
       <div className="grid min-h-svh lg:grid-cols-5">
         <div className="relative hidden lg:block lg:col-span-3">
           <Image
-            src="/images/auth-bg.jpg"
+            src="/images/Orio-Connect-Login-Screen_1.jpg"
             className="object-cover"
             alt="Image"
             fill

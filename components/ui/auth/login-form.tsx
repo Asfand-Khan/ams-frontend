@@ -98,7 +98,7 @@ const LoginForm = () => {
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-4xl font-bold">Login to your account</h1>
         <p className="text-muted-foreground text-md text-balance">
-          Welcome to the Orio Attendance
+          Welcome to the Orio Connect
         </p>
       </div>
 

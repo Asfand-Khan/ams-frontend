@@ -18,6 +18,7 @@ export interface AttendanceCorrection {
   updated_at: string;
   employee: {
     full_name: string;
+     profile_picture: string;
   };
   reviewer: {
     full_name: string;

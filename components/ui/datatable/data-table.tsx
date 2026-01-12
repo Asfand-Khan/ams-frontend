@@ -71,7 +71,7 @@ const DataTable = <TData, TValue>({
   title = "Data Table",
   handleRefetch,
   isRefetching,
-  showRefetch
+  showRefetch,
 }: DataTableProps<TData, TValue>) => {
   // State management for sorting, column filters, visibility, and row selection
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -97,6 +97,12 @@ const DataTable = <TData, TValue>({
     filterFns: {
       multiSelect: multiSelectFilter,
     },
+    initialState: {
+      pagination: {
+        pageSize: 50,
+        pageIndex: 0,
+      },
+    },
     state: {
       sorting,
       columnFilters,
@@ -111,15 +117,19 @@ const DataTable = <TData, TValue>({
       <Card className="w-full shadow-none border-none">
         <CardHeader className="border-b gap-0">
           <CardTitle>{title}</CardTitle>
-          {/* <CardDescription>List of all users in the system.</CardDescription> */}
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between pb-6">
+          <div className="flex items-center justify-between pb-4">
             <div>
               {enableGlobalFilter && <DataTableGlobalFilter table={table} />}
             </div>
             <div className="flex items-center gap-3">
-              {showRefetch && <RefetchDatatable handleRefetch={handleRefetch} isRefetching={isRefetching} />}
+            {showRefetch && (
+                <RefetchDatatable
+                  handleRefetch={handleRefetch}
+                  isRefetching={isRefetching}
+                />
+              )}
               {enableColumnVisibility && (
                 <DataTableColumnVisibility table={table} />
               )}
@@ -132,13 +142,12 @@ const DataTable = <TData, TValue>({
               )}
             </div>
           </div>
-          <ScrollArea className="h-[420px] rounded-md w-full">
-            <ScrollBar orientation="vertical" />
-            <Table className="relative">
+          <div className="grid w-full [&>div]:border-none [&>div]:rounded-md">
+            <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow
-                    className="bg-gray-50 sticky z-10 top-0"
+                    className="[&>*]:whitespace-nowrap sticky top-0 bg-gray-50 after:content-[''] after:inset-x-0 after:h-px after:absolute after:bottom-0 z-20"
                     key={headerGroup.id}
                   >
                     {headerGroup.headers.map((header) => {
@@ -156,12 +165,13 @@ const DataTable = <TData, TValue>({
                   </TableRow>
                 ))}
               </TableHeader>
-              <TableBody>
+              <TableBody className="overflow-hidden">
                 {table.getRowModel().rows?.length ? (
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
                       data-state={row.getIsSelected() && "selected"}
+                      className="[&>*]:whitespace-nowrap"
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
@@ -175,18 +185,14 @@ const DataTable = <TData, TValue>({
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-[380px] text-center"
-                    >
+                    <TableCell colSpan={columns.length} className="text-center">
                       No results.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+          </div>
         </CardContent>
         <CardFooter className="border-t">
           {enablePagination && <DataTablePagination table={table} />}

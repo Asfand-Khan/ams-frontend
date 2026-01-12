@@ -17,9 +17,7 @@ const RefetchDatatable: React.FC<RefetchDatatableProps> = ({
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          variant="secondary"
-          className="md:w-max w-full"
-          type="button"
+          variant="outline" size="sm" type="button"
           onClick={handleRefetch}
         >
           <RefreshCw size={26} className={cn(isRefetching && "animate-spin")} />

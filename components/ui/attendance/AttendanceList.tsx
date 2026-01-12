@@ -60,6 +60,11 @@ const AttendanceList = () => {
         attendance_date: format(currentDate, "yyyy-MM-dd"),
       }),
   });
+  const capitalizeWords = (str: string) =>
+    str
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   const formatTime12Hour = (time: string | null | undefined) => {
     if (!time || time === "---") return "---";
     try {
@@ -78,6 +83,49 @@ const AttendanceList = () => {
     return uniqueData.map((item) => ({
       label: item,
       value: item,
+    }));
+  }, [attendanceListResponse]);
+  const checkinStatusFilterOptions = useMemo(() => {
+    const uniqueStatuses = Array.from(
+      new Set(
+        attendanceListResponse?.payload
+          ?.map((item) => item.check_in_status)
+          .filter((status): status is string => !!status) || []
+      )
+    );
+
+    return uniqueStatuses.map((status) => ({
+      label: capitalizeWords(status.replaceAll("_", " ")),
+      value: status,
+    }));
+  }, [attendanceListResponse]);
+  const checkoutStatusFilterOptions = useMemo(() => {
+    const uniqueStatuses = Array.from(
+      new Set(
+        attendanceListResponse?.payload
+          ?.map((item) => item.check_out_status)
+          .filter((status): status is string => !!status) || []
+      )
+    );
+
+    return uniqueStatuses.map((status) => ({
+      label: capitalizeWords(status.replaceAll("_", " ")),
+      value: status,
+    }));
+  }, [attendanceListResponse]);
+
+  const dayStatusFilterOptions = useMemo(() => {
+    const uniqueStatuses = Array.from(
+      new Set(
+        attendanceListResponse?.payload
+          ?.map((item) => item.day_status)
+          .filter((status): status is string => !!status) || []
+      )
+    );
+
+    return uniqueStatuses.map((status) => ({
+      label: capitalizeWords(status.replaceAll("_", " ")),
+      value: status,
     }));
   }, [attendanceListResponse]);
   const columns: ColumnDef<AttendanceRecord>[] = [
@@ -125,21 +173,28 @@ const AttendanceList = () => {
         const formattedDate = format(date, "dd-MMM-yyyy");
         return (
           <div className="flex flex-col gap-1">
-            <span className="text-sm"><strong>Day: </strong>{formattedDate}</span>
-            <span className="text-sm"><strong>Date: </strong>{dayName}</span>
+            <span className="text-sm">
+              <strong>Day: </strong>
+              {formattedDate}
+            </span>
+            <span className="text-sm">
+              <strong>Date: </strong>
+              {dayName}
+            </span>
           </div>
         );
       },
     },
     {
-      accessorKey: "CheckIn",
+      id: "check_in",
+      accessorFn: (row) => row.check_in_status,
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Check In" />
       ),
       cell: ({ row }) => {
         const time = formatTime12Hour(row.original.check_in_time);
         const statusRaw = row.original.check_in_status;
-        const status = statusRaw ? statusRaw.split("_").join(" ") : null;
+        const status = statusRaw ? statusRaw.replaceAll("_", " ") : null;
 
         const getCheckInVariant = (s: string | null) => {
           switch (s) {
@@ -159,10 +214,10 @@ const AttendanceList = () => {
         return (
           <div className="flex flex-col gap-1">
             <span className="text-sm">
-              <strong>Time: </strong> {time}
+              <strong>Time:</strong> {time}
             </span>
             <span className="text-sm">
-              <strong>Status: </strong>
+              <strong>Status:</strong>{" "}
               {status ? (
                 <Badge
                   variant={getCheckInVariant(status)}
@@ -177,17 +232,24 @@ const AttendanceList = () => {
           </div>
         );
       },
+      filterFn: "multiSelect",
+      meta: {
+        filterType: "multiselect",
+        filterOptions: checkinStatusFilterOptions,
+        filterPlaceholder: "Filter status...",
+      } as ColumnMeta,
     },
 
     {
-      accessorKey: "Check Out",
+      id: "check_out",
+      accessorFn: (row) => row.check_out_status,
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Check Out" />
       ),
       cell: ({ row }) => {
         const time = formatTime12Hour(row.original.check_out_time);
         const statusRaw = row.original.check_out_status;
-        const status = statusRaw ? statusRaw.split("_").join(" ") : null;
+        const status = statusRaw ? statusRaw.replaceAll("_", " ") : null;
 
         const getCheckOutVariant = (s: string | null) => {
           switch (s) {
@@ -210,10 +272,10 @@ const AttendanceList = () => {
         return (
           <div className="flex flex-col gap-1">
             <span className="text-sm">
-              <strong>Time: </strong> {time}
+              <strong>Time:</strong> {time}
             </span>
             <span className="text-sm">
-              <strong>Status: </strong>
+              <strong>Status:</strong>{" "}
               {status ? (
                 <Badge
                   variant={getCheckOutVariant(status)}
@@ -228,17 +290,26 @@ const AttendanceList = () => {
           </div>
         );
       },
+
+      // 🔥 FILTER ENABLED HERE
+      filterFn: "multiSelect",
+      meta: {
+        filterType: "multiselect",
+        filterOptions: checkoutStatusFilterOptions,
+        filterPlaceholder: "Filter checkout status...",
+      } as ColumnMeta,
     },
 
     {
-      accessorKey: "workDay",
+      id: "day_status",
+      accessorFn: (row) => row.day_status,
       header: ({ column }) => (
         <DatatableColumnHeader column={column} title="Hours / Status" />
       ),
       cell: ({ row }) => {
         const workHours = row.original.work_hours ?? "---";
         const statusRaw = row.original.day_status;
-        const status = statusRaw ? statusRaw.split("_").join(" ") : null;
+        const status = statusRaw ? statusRaw.replaceAll("_", " ") : null;
 
         const getDayStatusVariant = (s: string | null) => {
           switch (s) {
@@ -261,10 +332,10 @@ const AttendanceList = () => {
         return (
           <div className="flex flex-col gap-1">
             <span className="text-sm">
-              <strong>Hours: </strong> {workHours}
+              <strong>Hours:</strong> {workHours}
             </span>
             <span className="text-sm">
-              <strong>Day Status: </strong>
+              <strong>Day Status:</strong>{" "}
               {status ? (
                 <Badge
                   variant={getDayStatusVariant(status)}
@@ -279,6 +350,14 @@ const AttendanceList = () => {
           </div>
         );
       },
+
+      // 🔥 DAY STATUS FILTER
+      filterFn: "multiSelect",
+      meta: {
+        filterType: "multiselect",
+        filterOptions: dayStatusFilterOptions,
+        filterPlaceholder: "Filter day status...",
+      } as ColumnMeta,
     },
 
     // {
@@ -393,7 +472,9 @@ const AttendanceList = () => {
 
           {/* Present */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground font-medium mb-1">Present</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              Present
+            </p>
             <p className="text-xl font-semibold">
               {dailyAttendanceSummaryResponse.payload[0].present}
             </p>
@@ -401,7 +482,9 @@ const AttendanceList = () => {
 
           {/* Absent */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground font-medium mb-1">Absent</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              Absent
+            </p>
             <p className="text-xl font-semibold">
               {dailyAttendanceSummaryResponse.payload[0].absent}
             </p>
@@ -409,7 +492,9 @@ const AttendanceList = () => {
 
           {/* Work From Home */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground font-medium mb-1">Work From Home</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              Work From Home
+            </p>
             <p className="text-xl font-semibold">
               {dailyAttendanceSummaryResponse.payload[0].work_from_home}
             </p>
@@ -417,7 +502,9 @@ const AttendanceList = () => {
 
           {/* Late Arrivals */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground font-medium mb-1">Late Arrivals</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              Late Arrivals
+            </p>
             <p className="text-xl font-semibold">
               {dailyAttendanceSummaryResponse.payload[0].late_arrivals}
             </p>
@@ -425,7 +512,9 @@ const AttendanceList = () => {
 
           {/* On Leave */}
           <div className="bg-white border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-sm text-muted-foreground font-medium mb-1">On Leave</p>
+            <p className="text-sm text-muted-foreground font-medium mb-1">
+              On Leave
+            </p>
             <p className="text-xl font-semibold">
               {dailyAttendanceSummaryResponse.payload[0].on_leave}
             </p>

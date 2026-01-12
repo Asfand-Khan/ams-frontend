@@ -3,7 +3,7 @@ import LoginForm from '@/components/ui/auth/login-form'
 
 export const metadata: Metadata = {
   title: 'Login | Orio Attendance',
-  description: 'Login to your Jubilee Retail account to access exclusive features and manage your profile.',
+  description: 'A comprehensive workforce management platform designed to manage employees, attendance, leave, shifts, teams, assets, and meetings with efficiency and control..',
 }
 
 const page = () => {
