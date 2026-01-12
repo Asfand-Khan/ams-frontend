@@ -143,6 +143,7 @@ const attendancehistoryPDFExport = useCallback(() => {
     attendanceHistoryData,
     attendanceSummaryData,
     leaveSummaryData,
+     leaveDetailData,
     watch, 
   ]);
   const fetchLeaveSummaryMutation = useMutation<
