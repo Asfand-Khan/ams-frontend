@@ -38,6 +38,7 @@ import {
 import { format } from "date-fns";
 
 const LeaveList = () => {
+  const ADD_URL = "/hr/leave/add-leave";
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
@@ -416,15 +417,20 @@ const LeaveList = () => {
   };
 
   return (
-    <>
+    <div className="space-y-4">
+          <SubNav
+            title="Attendance Correction List"
+            urlPath={ADD_URL}
+            addBtnTitle="Add Leave"
+          />
       <SubNav title="Leave List" />
       <LeaveDatatable
         columns={columns}
         payload={leaveListResponse.payload}
         handleRefetch={handleRefetch}
         isRefetching={isFetching}
-      />
-    </>
+     />
+    </div>
   );
 };
 

@@ -431,18 +431,21 @@ const MeetingList = () => {
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-10/12">
-          <div className="flex items-center gap-2 overflow-x-auto">
-            <ScheduleInstanceDatatable
-              columns={instanceColumns}
-              payload={meetingInstance}
-              handleRefetch={handleRefetch}
-              isRefetching={isFetching}
-            />
+        <DialogContent className="sm:max-w-10/12 max-h-[80vh] overflow-hidden">
+          {/* horizontal scroll */}
+          <div className="overflow-x-auto">
+            {/* vertical scroll */}
+            <div className="max-h-[65vh] overflow-y-auto">
+              <ScheduleInstanceDatatable
+                columns={instanceColumns}
+                payload={meetingInstance}
+                handleRefetch={handleRefetch}
+                isRefetching={isFetching}
+              />
+            </div>
           </div>
         </DialogContent>
       </Dialog>
-
       <Dialog open={minutesOpen} onOpenChange={setMinutesOpen}>
         <DialogContent className="w-[95%] sm:max-w-[80%] md:max-w-[70%] lg:max-w-[60%] xl:max-w-[50%] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
