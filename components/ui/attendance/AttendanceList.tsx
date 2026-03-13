@@ -65,17 +65,17 @@ const AttendanceList = () => {
       .split(" ")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
-  const formatTime12Hour = (time: string | null | undefined) => {
-    if (!time || time === "---") return "---";
-    try {
-      const [hours, minutes] = time.split(":").map(Number);
-      const period = hours >= 12 ? "PM" : "AM";
-      const hour12 = hours % 12 || 12;
-      return `${hour12}:${minutes.toString().padStart(2, "0")} ${period}`;
-    } catch {
-      return time;
-    }
-  };
+  // const formatTime12Hour = (time: string | null | undefined) => {
+  //   if (!time || time === "---") return "---";
+  //   try {
+  //     const [hours, minutes] = time.split(":").map(Number);
+  //     const period = hours >= 12 ? "PM" : "AM";
+  //     const hour12 = hours % 12 || 12;
+  //     return `${hour12}:${minutes.toString().padStart(2, "0")} ${period}`;
+  //   } catch {
+  //     return time;
+  //   }
+  // };
   const fullNameFilterOptions = useMemo(() => {
     const allFullName =
       attendanceListResponse?.payload?.map((item) => item.full_name) || [];
