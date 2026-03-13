@@ -1,7 +1,18 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
-import { formatTime12Hour } from "../attendance-history/attendance-history-list";
+// import { formatTime12Hour } from "../attendance-history/attendance-history-list";
+export const formatTime12Hour = (time: string | null | undefined) => {
+  if (!time || time === "---") return "---";
+  try {
+    const [hours, minutes] = time.split(":").map(Number);
+    const period = hours >= 12 ? "PM" : "AM";
+    const hour12 = hours % 12 || 12;
+    return `${hour12}:${minutes.toString().padStart(2, "0")} ${period}`;
+  } catch {
+    return time;
+  }
+};
 
 import {
   AttendanceRecord,
