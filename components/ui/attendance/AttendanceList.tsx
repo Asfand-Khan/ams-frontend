@@ -90,8 +90,8 @@ const AttendanceList = () => {
       new Set(
         attendanceListResponse?.payload
           ?.map((item) => item.check_in_status)
-          .filter((status): status is string => !!status) || []
-      )
+          .filter((status): status is string => !!status) || [],
+      ),
     );
 
     return uniqueStatuses.map((status) => ({
@@ -104,8 +104,8 @@ const AttendanceList = () => {
       new Set(
         attendanceListResponse?.payload
           ?.map((item) => item.check_out_status)
-          .filter((status): status is string => !!status) || []
-      )
+          .filter((status): status is string => !!status) || [],
+      ),
     );
 
     return uniqueStatuses.map((status) => ({
@@ -119,8 +119,8 @@ const AttendanceList = () => {
       new Set(
         attendanceListResponse?.payload
           ?.map((item) => item.day_status)
-          .filter((status): status is string => !!status) || []
-      )
+          .filter((status): status is string => !!status) || [],
+      ),
     );
 
     return uniqueStatuses.map((status) => ({
@@ -192,7 +192,7 @@ const AttendanceList = () => {
         <DatatableColumnHeader column={column} title="Check In" />
       ),
       cell: ({ row }) => {
-        const time = formatTime12Hour(row.original.check_in_time);
+        const time = row.original.check_in_time;
         const statusRaw = row.original.check_in_status;
         const status = statusRaw ? statusRaw.replaceAll("_", " ") : null;
 
@@ -247,7 +247,7 @@ const AttendanceList = () => {
         <DatatableColumnHeader column={column} title="Check Out" />
       ),
       cell: ({ row }) => {
-        const time = formatTime12Hour(row.original.check_out_time);
+        const time = row.original.check_out_time;
         const statusRaw = row.original.check_out_status;
         const status = statusRaw ? statusRaw.replaceAll("_", " ") : null;
 

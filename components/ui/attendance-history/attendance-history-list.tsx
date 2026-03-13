@@ -425,7 +425,7 @@ const attendancehistoryPDFExport = useCallback(() => {
         <DatatableColumnHeader column={column} title="Check In" />
       ),
       cell: ({ row }) => {
-        const time = formatTime12Hour(row.original.check_in_time ?? "---");
+        const time = row.original.check_in_time ?? "---";
         const statusRaw = row.original.check_in_status;
         const status = statusRaw ? statusRaw.split("_").join(" ") : null;
 
@@ -464,7 +464,7 @@ const attendancehistoryPDFExport = useCallback(() => {
         <DatatableColumnHeader column={column} title="Check Out" />
       ),
       cell: ({ row }) => {
-        const time = formatTime12Hour(row.original.check_out_time ?? "---");
+        const time = row.original.check_out_time ?? "---";
         const statusRaw = row.original.check_out_status;
         const status = statusRaw ? statusRaw.split("_").join(" ") : null;
 
