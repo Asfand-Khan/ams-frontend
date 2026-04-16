@@ -22,7 +22,7 @@ import {
 // Helper: Calculate work hours
 const calculateWorkHours = (
   checkInTime: string | null | undefined,
-  checkOutTime: string | null | undefined
+  checkOutTime: string | null | undefined,
 ): string => {
   if (!checkInTime || !checkOutTime) return "---";
   try {
@@ -38,52 +38,107 @@ const calculateWorkHours = (
 };
 
 // Convert to Excel (Summary + Detail sheets)
-const convertToExcel = (summaryData: any[], detailData: any[]): XLSX.WorkBook => {
+const convertToExcel = (
+  summaryData: any[],
+  detailData: any[],
+): XLSX.WorkBook => {
   const wb = XLSX.utils.book_new();
 
   const summaryHeaders = [
-    "Employee Name", "Department Name", "Designation Title", "Total Days",
-    "Working Days", "Present Days", "Absent Days", "Leave Days",
-    "Weekend Days", "Weekend Attendance Days", "Holiday Days",
-    "Work From Home Days", "On Time Check Ins", "Late Check Ins",
-    "Manual Check Ins", "On Time Check Outs", "Early Leave Check Outs",
-    "Early Go Check Outs", "Overtime Check Outs", "Half Day Check Outs",
-    "Manual Check Outs", "Expected Work Hours", "Actual Work Hours",
+    "Employee Name",
+    "Department Name",
+    "Designation Title",
+    "Total Days",
+    "Working Days",
+    "Present Days",
+    "Absent Days",
+    "Leave Days",
+    "Weekend Days",
+    "Weekend Attendance Days",
+    "Holiday Days",
+    "Work From Home Days",
+    "On Time Check Ins",
+    "Late Check Ins",
+    "Manual Check Ins",
+    "On Time Check Outs",
+    "Early Leave Check Outs",
+    "Early Go Check Outs",
+    "Overtime Check Outs",
+    "Half Day Check Outs",
+    "Manual Check Outs",
+    "Expected Work Hours",
+    "Actual Work Hours",
+    "Hours Difference", // ← New Column
+    "Status",
   ];
 
-  const summaryRows = summaryData.map((item) => ({
-    "Employee Name": item.employee_name ?? "---",
-    "Department Name": item.department_name ?? "---",
-    "Designation Title": item.designation_title ?? "---",
-    "Total Days": item.total_days ?? "---",
-    "Working Days": item.working_days ?? "---",
-    "Present Days": item.present_days ?? "---",
-    "Absent Days": item.absent_days ?? "---",
-    "Leave Days": item.leave_days ?? "---",
-    "Weekend Days": item.weekend_days ?? "---",
-    "Weekend Attendance Days": item.weekend_attendance_days ?? "---",
-    "Holiday Days": item.holiday_days ?? "---",
-    "Work From Home Days": item.work_from_home_days ?? "---",
-    "On Time Check Ins": item.on_time_check_ins ?? "---",
-    "Late Check Ins": item.late_check_ins ?? "---",
-    "Manual Check Ins": item.manual_check_ins ?? "---",
-    "On Time Check Outs": item.on_time_check_outs ?? "---",
-    "Early Leave Check Outs": item.early_leave_check_outs ?? "---",
-    "Early Go Check Outs": item.early_go_check_outs ?? "---",
-    "Overtime Check Outs": item.overtime_check_outs ?? "---",
-    "Half Day Check Outs": item.half_day_check_outs ?? "---",
-    "Manual Check Outs": item.manual_check_outs ?? "---",
-    "Expected Work Hours": item.expected_work_hours ? Number(item.expected_work_hours) : "---",
-    "Actual Work Hours": item.actual_work_hours ?? "---",
-  }));
+  const summaryRows = summaryData.map((item) => {
+    const expected = Number(item.expected_work_hours) || 0;
+    const actual = Number(item.actual_work_hours) || 0;
+    const difference = actual - expected;
 
-  const wsSummary = XLSX.utils.aoa_to_sheet([summaryHeaders, ...summaryRows.map(Object.values)]);
+    const differenceText =
+      difference > 0
+        ? `+${difference.toFixed(2)} hrs`
+        : difference < 0
+          ? `${difference.toFixed(2)} hrs`
+          : "0.00 hrs";
+
+    const status =
+      difference < 0 ? "Shortfall" : difference > 0 ? "Overtime" : "On Track";
+
+    return {
+      "Employee Name": item.employee_name ?? "---",
+      "Department Name": item.department_name ?? "---",
+      "Designation Title": item.designation_title ?? "---",
+      "Total Days": item.total_days ?? "---",
+      "Working Days": item.working_days ?? "---",
+      "Present Days": item.present_days ?? "---",
+      "Absent Days": item.absent_days ?? "---",
+      "Leave Days": item.leave_days ?? "---",
+      "Weekend Days": item.weekend_days ?? "---",
+      "Weekend Attendance Days": item.weekend_attendance_days ?? "---",
+      "Holiday Days": item.holiday_days ?? "---",
+      "Work From Home Days": item.work_from_home_days ?? "---",
+      "On Time Check Ins": item.on_time_check_ins ?? "---",
+      "Late Check Ins": item.late_check_ins ?? "---",
+      "Manual Check Ins": item.manual_check_ins ?? "---",
+      "On Time Check Outs": item.on_time_check_outs ?? "---",
+      "Early Leave Check Outs": item.early_leave_check_outs ?? "---",
+      "Early Go Check Outs": item.early_go_check_outs ?? "---",
+      "Overtime Check Outs": item.overtime_check_outs ?? "---",
+      "Half Day Check Outs": item.half_day_check_outs ?? "---",
+      "Manual Check Outs": item.manual_check_outs ?? "---",
+      "Expected Work Hours": item.expected_work_hours
+        ? Number(item.expected_work_hours)
+        : "---",
+      "Actual Work Hours": item.actual_work_hours ?? "---",
+      "Hours Difference": differenceText,
+      Status: status,
+    };
+  });
+
+  const wsSummary = XLSX.utils.aoa_to_sheet([
+    summaryHeaders,
+    ...summaryRows.map((row) => Object.values(row)),
+  ]);
+
+  // Optional: Add some basic formatting (bold header)
+  wsSummary["!rows"] = [{ hpt: 25 }]; // header row height
+
   XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
 
   const detailHeaders = [
-    "Employee ID", "Employee Code", "Full Name", "Date",
-    "Check In Time", "Check Out Time", "Check In Status",
-    "Check Out Status", "Day Status", "Work Hours",
+    "Employee ID",
+    "Employee Code",
+    "Full Name",
+    "Date",
+    "Check In Time",
+    "Check Out Time",
+    "Check In Status",
+    "Check Out Status",
+    "Day Status",
+    "Work Hours",
   ];
 
   const detailRows = detailData.map((item) => ({
@@ -100,12 +155,16 @@ const convertToExcel = (summaryData: any[], detailData: any[]): XLSX.WorkBook =>
     "Check In Status": item.check_in_status ?? "---",
     "Check Out Status": item.check_out_status ?? "---",
     "Day Status": item.day_status ?? "---",
-    "Work Hours": item.work_hours && !isNaN(Number(item.work_hours))
-      ? Number(item.work_hours)
-      : calculateWorkHours(item.check_in_time, item.check_out_time),
+    "Work Hours":
+      item.work_hours && !isNaN(Number(item.work_hours))
+        ? Number(item.work_hours)
+        : calculateWorkHours(item.check_in_time, item.check_out_time),
   }));
 
-  const wsDetail = XLSX.utils.aoa_to_sheet([detailHeaders, ...detailRows.map(Object.values)]);
+  const wsDetail = XLSX.utils.aoa_to_sheet([
+    detailHeaders,
+    ...detailRows.map(Object.values),
+  ]);
   XLSX.utils.book_append_sheet(wb, wsDetail, "Detail");
 
   return wb;
@@ -161,7 +220,9 @@ const AttendanceReportForm = () => {
       });
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || "Failed to fetch summary report");
+      toast.error(
+        err?.response?.data?.message || "Failed to fetch summary report",
+      );
     },
   });
 
@@ -185,7 +246,9 @@ const AttendanceReportForm = () => {
       });
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || "Failed to fetch detail report");
+      toast.error(
+        err?.response?.data?.message || "Failed to fetch detail report",
+      );
     },
   });
 
@@ -198,8 +261,12 @@ const AttendanceReportForm = () => {
 
       toast.success("Report generated successfully!");
 
-      const summaryData = Array.isArray(summaryRes?.payload) ? summaryRes.payload : [];
-      const detailData = Array.isArray(detailRes?.payload) ? detailRes.payload : [];
+      const summaryData = Array.isArray(summaryRes?.payload)
+        ? summaryRes.payload
+        : [];
+      const detailData = Array.isArray(detailRes?.payload)
+        ? detailRes.payload
+        : [];
 
       const workbook = convertToExcel(summaryData, detailData);
       const fileName = `Attendance_Report_${format(data.dateRange!.from!, "dd-MMMM-yyyy")}_to_${format(data.dateRange!.to!, "dd-MMMM-yyyy")}.xlsx`;
@@ -241,7 +308,8 @@ const AttendanceReportForm = () => {
               />
               {errors.dateRange && (
                 <p className="text-sm text-red-500">
-                  {errors.dateRange.message || "Please select a valid date range"}
+                  {errors.dateRange.message ||
+                    "Please select a valid date range"}
                 </p>
               )}
             </div>
