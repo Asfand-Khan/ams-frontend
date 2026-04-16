@@ -79,12 +79,12 @@ const convertToExcel = (
     let actual = 0;
     const actStr = String(item.actual_work_hours || "").trim();
 
-    if (actStr.includes(":")) {
-      const [h, m = 0, s = 0] = actStr.split(":").map(Number);
-      actual = h + m / 60 + s / 3600;
-    } else {
-      actual = Number(actStr) || 0;
-    }
+    // if (actStr.includes(":")) {
+    //   const [h, m = 0, s = 0] = actStr.split(":").map(Number);
+    //   actual = h + m / 60 + s / 3600;
+    // } else {
+    //   actual = Number(actStr) || 0;
+    // }
 
     const difference = actual - expected;
 
@@ -122,8 +122,8 @@ const convertToExcel = (
       "Overtime Check Outs": item.overtime_check_outs ?? "---",
       "Half Day Check Outs": item.half_day_check_outs ?? "---",
       "Manual Check Outs": item.manual_check_outs ?? "---",
-      "Expected Work Hours": expected.toFixed(2),
-      "Actual Work Hours": actual.toFixed(2),
+       "Expected Work Hours": item.expected_work_hours ? Number(item.expected_work_hours) : "---",
+        "Actual Work Hours": item.actual_work_hours ?? "---",
       "Hours Difference": diffText,
       Status: status, // ← Yeh naya column
     };
@@ -274,6 +274,7 @@ const AttendanceReportForm = () => {
 
       const summaryData = Array.isArray(summaryRes?.payload)
         ? summaryRes.payload
+        
         : [];
       const detailData = Array.isArray(detailRes?.payload)
         ? detailRes.payload
