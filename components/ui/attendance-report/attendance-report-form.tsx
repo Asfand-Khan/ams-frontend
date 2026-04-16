@@ -76,8 +76,8 @@ const convertToExcel = (
     const expected = Number(item.expected_work_hours) || 0;
 
     // Actual hours parse
-    let actual = 0;
-    const actStr = String(item.actual_work_hours || "").trim();
+    // let actual = 0;
+    // const actStr = String(item.actual_work_hours || "").trim();
 
     // if (actStr.includes(":")) {
     //   const [h, m = 0, s = 0] = actStr.split(":").map(Number);
@@ -86,8 +86,9 @@ const convertToExcel = (
     //   actual = Number(actStr) || 0;
     // }
 
-    const difference = actual - expected;
-
+    // const difference = actual - expected;
+const actStr = parseFloat(String(item.actual_work_hours).trim()) || 0;
+const difference = actStr - expected;
     // Clean Hours Difference
     let diffText = difference.toFixed(2);
     if (difference > 0) diffText = `+${difference.toFixed(2)}`;
