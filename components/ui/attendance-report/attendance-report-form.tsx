@@ -68,24 +68,37 @@ const convertToExcel = (
     "Manual Check Outs",
     "Expected Work Hours",
     "Actual Work Hours",
-    "Hours Difference", // ← New Column
-    "Status",
+    "Hours Difference",
+    "Status", // ← Naya Column
   ];
 
   const summaryRows = summaryData.map((item) => {
     const expected = Number(item.expected_work_hours) || 0;
-    const actual = Number(item.actual_work_hours) || 0;
+
+    // Actual hours parse
+    let actual = 0;
+    const actStr = String(item.actual_work_hours || "").trim();
+
+    if (actStr.includes(":")) {
+      const [h, m = 0, s = 0] = actStr.split(":").map(Number);
+      actual = h + m / 60 + s / 3600;
+    } else {
+      actual = Number(actStr) || 0;
+    }
+
     const difference = actual - expected;
 
-    const differenceText =
-      difference > 0
-        ? `+${difference.toFixed(2)} hrs`
-        : difference < 0
-          ? `${difference.toFixed(2)} hrs`
-          : "0.00 hrs";
+    // Clean Hours Difference
+    let diffText = difference.toFixed(2);
+    if (difference > 0) diffText = `+${difference.toFixed(2)}`;
 
-    const status =
-      difference < 0 ? "Shortfall" : difference > 0 ? "Overtime" : "On Track";
+    // Status Column Logic
+    let status = "On Time";
+    if (difference > 0) {
+      status = "Overtime";
+    } else if (difference < 0) {
+      status = "Shortfall";
+    }
 
     return {
       "Employee Name": item.employee_name ?? "---",
@@ -109,12 +122,10 @@ const convertToExcel = (
       "Overtime Check Outs": item.overtime_check_outs ?? "---",
       "Half Day Check Outs": item.half_day_check_outs ?? "---",
       "Manual Check Outs": item.manual_check_outs ?? "---",
-      "Expected Work Hours": item.expected_work_hours
-        ? Number(item.expected_work_hours)
-        : "---",
-      "Actual Work Hours": item.actual_work_hours ?? "---",
-      "Hours Difference": differenceText,
-      Status: status,
+      "Expected Work Hours": expected.toFixed(2),
+      "Actual Work Hours": actual.toFixed(2),
+      "Hours Difference": diffText,
+      Status: status, // ← Yeh naya column
     };
   });
 
@@ -123,11 +134,11 @@ const convertToExcel = (
     ...summaryRows.map((row) => Object.values(row)),
   ]);
 
-  // Optional: Add some basic formatting (bold header)
-  wsSummary["!rows"] = [{ hpt: 25 }]; // header row height
+  wsSummary["!cols"] = new Array(summaryHeaders.length).fill({ wch: 18 });
+  wsSummary["!cols"][23] = { wch: 16 }; // Hours Difference
+  wsSummary["!cols"][24] = { wch: 12 }; // Status column chhota
 
   XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
-
   const detailHeaders = [
     "Employee ID",
     "Employee Code",
